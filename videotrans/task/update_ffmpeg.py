@@ -26,34 +26,61 @@ os.makedirs(dest_dir, exist_ok=True)
 
 # GitHub API URL to get the latest ffmpeg version
 api_url = "https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/latest"
-response = requests.get(api_url)
-latest_release = response.json()
-latest_version = latest_release["tag_name"]
-download_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n7.0-latest-win64-gpl-7.0.zip"
+resp = requests.get(api_url, timeout=60)
+resp.raise_for_status()
+latest_release = resp.json()
+
+# Prefer win64 gpl static build; fall back to any win64-gpl zip
+assets = latest_release.get("assets", [])
+download_url = None
+asset_name = None
+preferred_keywords = ["win64-gpl", ".zip"]
+for a in assets:
+    name = a.get("name", "")
+    url = a.get("browser_download_url")
+    if not url:
+        continue
+    if all(k in name for k in preferred_keywords) and "shared" not in name:
+        download_url = url
+        asset_name = name
+        break
+
+# Fallback: try master-latest naming if not found in assets
+if not download_url:
+    download_url = "https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-win64-gpl.zip"
+    asset_name = "ffmpeg-master-latest-win64-gpl.zip"
 
 # Destination path for the download
-zip_path = os.path.join(dest_dir, "ffmpeg.zip")
+zip_path = os.path.join(dest_dir, asset_name or "ffmpeg.zip")
 
 # Download the zip file
-print("Downloading ffmpeg.zip...")
-with requests.get(download_url, stream=True) as r:
+print(f"Downloading {asset_name or 'ffmpeg.zip'}...")
+with requests.get(download_url, stream=True, timeout=300) as r:
     r.raise_for_status()
     with open(zip_path, "wb") as f:
         for chunk in r.iter_content(chunk_size=8192):
-            f.write(chunk)
+            if chunk:
+                f.write(chunk)
 
 # Extract the contents of the zip file
-print("Extracting the contents of ffmpeg.zip...")
+print("Extracting the contents of the ffmpeg package...")
 with zipfile.ZipFile(zip_path, "r") as zip_ref:
     zip_ref.extractall(temp_dir)
 
-# Paths to the binaries within the extracted zip file
-ffmpeg_exe = os.path.join(
-    temp_dir, "ffmpeg-n7.0-latest-win64-gpl-7.0", "bin", "ffmpeg.exe"
-)
-ffprobe_exe = os.path.join(
-    temp_dir, "ffmpeg-n7.0-latest-win64-gpl-7.0", "bin", "ffprobe.exe"
-)
+# Detect the extracted root directory dynamically and locate binaries
+extracted_root = None
+for entry in os.listdir(temp_dir):
+    p = os.path.join(temp_dir, entry)
+    if os.path.isdir(p) and os.path.exists(os.path.join(p, "bin")):
+        extracted_root = p
+        break
+
+if not extracted_root:
+    # Some archives may extract directly to bin
+    extracted_root = temp_dir
+
+ffmpeg_exe = os.path.join(extracted_root, "bin", "ffmpeg.exe")
+ffprobe_exe = os.path.join(extracted_root, "bin", "ffprobe.exe")
 
 # Checks if the files already exist and removes them if necessary
 if os.path.exists(os.path.join(dest_dir, "ffmpeg.exe")):
