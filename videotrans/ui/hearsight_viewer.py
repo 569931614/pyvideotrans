@@ -8,18 +8,22 @@ from PySide6.QtWidgets import (
     QPushButton, QLabel, QSplitter, QListWidget,
     QListWidgetItem, QMessageBox, QFileDialog
 )
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QFont
+from PySide6.QtCore import Qt, Signal, QUrl
+from PySide6.QtGui import QFont, QDesktopServices
 from typing import List, Dict, Any
+import os
+import subprocess
+import sys
 
 
 class SummaryViewerDialog(QDialog):
     """摘要查看器对话框"""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, video_path=None):
         super().__init__(parent)
         self.paragraphs = []
         self.summary = {}
+        self.video_path = video_path  # 存储视频路径
 
         self.setWindowTitle("HearSight - 智能摘要")
         self.resize(1200, 800)
@@ -94,6 +98,7 @@ class SummaryViewerDialog(QDialog):
                 border-bottom: 1px solid #f0f3f5;
                 color: #495057;
                 font-size: 13px;
+                cursor: pointer;
             }
             QListWidget::item:selected {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
@@ -109,6 +114,7 @@ class SummaryViewerDialog(QDialog):
             }
         """)
         self.paragraph_list.itemClicked.connect(self.on_paragraph_selected)
+        self.paragraph_list.itemDoubleClicked.connect(self.on_paragraph_double_clicked)
 
         left_container = QVBoxLayout()
         left_container.addWidget(para_label)
@@ -178,7 +184,6 @@ class SummaryViewerDialog(QDialog):
             QPushButton:hover {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                     stop:0 #6ab9ff, stop:1 #5aa9ff);
-                box-shadow: 0 4px 12px rgba(74, 158, 255, 0.4);
             }
             QPushButton:pressed {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
@@ -202,7 +207,6 @@ class SummaryViewerDialog(QDialog):
             QPushButton:hover {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                     stop:0 #8a98a7, stop:1 #7a8290);
-                box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
             }
             QPushButton:pressed {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
@@ -369,3 +373,138 @@ class SummaryViewerDialog(QDialog):
 
         except Exception as e:
             QMessageBox.critical(self, "错误", f"导出失败：\n{str(e)}")
+
+    def on_paragraph_double_clicked(self, item: QListWidgetItem):
+        """双击段落时播放视频"""
+        para = item.data(Qt.UserRole)
+        if not para:
+            return
+
+        # 检查是否有视频路径
+        if not self.video_path:
+            QMessageBox.warning(self, "提示", "未设置视频路径，无法播放")
+            return
+
+        # 检查视频文件是否存在
+        if not os.path.exists(self.video_path):
+            QMessageBox.warning(
+                self,
+                "视频不存在",
+                f"视频文件不存在或已被移动：\n{self.video_path}"
+            )
+            return
+
+        # 获取开始时间
+        start_time = para.get("start_time", 0.0)
+
+        try:
+            # 播放视频并跳转到指定时间
+            self.play_video_at_time(self.video_path, start_time)
+        except Exception as e:
+            QMessageBox.critical(self, "错误", f"播放视频失败：\n{str(e)}")
+
+    def play_video_at_time(self, video_path: str, start_time: float):
+        """
+        播放视频并跳转到指定时间
+
+        Args:
+            video_path: 视频文件路径
+            start_time: 开始时间（秒）
+        """
+        try:
+            # 根据操作系统选择合适的播放器
+            if sys.platform == 'win32':
+                self._play_video_windows(video_path, start_time)
+            elif sys.platform == 'darwin':
+                self._play_video_macos(video_path, start_time)
+            else:
+                self._play_video_linux(video_path, start_time)
+
+        except Exception as e:
+            # 如果专用播放器失败，尝试使用系统默认播放器
+            QMessageBox.warning(
+                self,
+                "提示",
+                f"无法使用专用播放器跳转到指定时间。\n\n"
+                f"将使用系统默认播放器打开视频（从头开始播放）。\n\n"
+                f"建议安装VLC播放器以支持时间跳转功能。\n\n"
+                f"错误信息: {str(e)}"
+            )
+            # 使用系统默认播放器打开（不支持时间跳转）
+            QDesktopServices.openUrl(QUrl.fromLocalFile(video_path))
+
+    def _play_video_windows(self, video_path: str, start_time: float):
+        """Windows平台播放视频"""
+        vlc_paths = [
+            r"C:\Program Files\VideoLAN\VLC\vlc.exe",
+            r"C:\Program Files (x86)\VideoLAN\VLC\vlc.exe",
+        ]
+
+        for vlc_path in vlc_paths:
+            if os.path.exists(vlc_path):
+                subprocess.Popen([
+                    vlc_path,
+                    video_path,
+                    f"--start-time={int(start_time)}"
+                ])
+                return
+
+        potplayer_paths = [
+            r"C:\Program Files\DAUM\PotPlayer\PotPlayerMini64.exe",
+            r"C:\Program Files (x86)\DAUM\PotPlayer\PotPlayerMini.exe",
+        ]
+
+        for pot_path in potplayer_paths:
+            if os.path.exists(pot_path):
+                subprocess.Popen([
+                    pot_path,
+                    video_path,
+                    f"/seek={int(start_time)}"
+                ])
+                return
+
+        raise FileNotFoundError("未找到VLC或PotPlayer播放器")
+
+    def _play_video_macos(self, video_path: str, start_time: float):
+        """macOS平台播放视频"""
+        try:
+            subprocess.Popen([
+                "open", "-a", "IINA", video_path,
+                "--args", f"--mpv-start={int(start_time)}"
+            ])
+            return
+        except:
+            pass
+
+        try:
+            subprocess.Popen([
+                "open", "-a", "VLC", video_path,
+                "--args", f"--start-time={int(start_time)}"
+            ])
+            return
+        except:
+            pass
+
+        raise FileNotFoundError("未找到IINA或VLC播放器")
+
+    def _play_video_linux(self, video_path: str, start_time: float):
+        """Linux平台播放视频"""
+        try:
+            subprocess.Popen([
+                "vlc", video_path,
+                f"--start-time={int(start_time)}"
+            ])
+            return
+        except:
+            pass
+
+        try:
+            subprocess.Popen([
+                "mpv", video_path,
+                f"--start={int(start_time)}"
+            ])
+            return
+        except:
+            pass
+
+        raise FileNotFoundError("未找到VLC或MPV播放器")

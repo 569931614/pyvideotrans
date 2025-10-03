@@ -981,6 +981,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             if not srt_path:
                 return
 
+            # 尝试找到对应的视频文件
+            video_path = None
+            srt_dir = os.path.dirname(srt_path)
+            srt_basename = os.path.splitext(os.path.basename(srt_path))[0]
+
+            # 常见视频扩展名
+            video_exts = ['.mp4', '.mkv', '.avi', '.mov', '.flv', '.wmv', '.webm']
+            for ext in video_exts:
+                potential_video = os.path.join(srt_dir, srt_basename + ext)
+                if os.path.exists(potential_video):
+                    video_path = potential_video
+                    break
+
             # 创建进度对话框
             progress = QProgressDialog("正在处理...", "取消", 0, 100, self)
             progress.setWindowModality(Qt.WindowModal)
@@ -995,13 +1008,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 merge_config=self.hearsight_config['merge']
             )
 
+            # 保存video_path供后续使用
+            self.current_hearsight_video = video_path
+
             # 连接信号
             self.hearsight_processor.progress_updated.connect(
                 lambda text, percent: self._update_hearsight_progress(progress, text, percent)
             )
 
             self.hearsight_processor.finished.connect(
-                lambda summary, paragraphs: self._show_hearsight_result(progress, summary, paragraphs)
+                lambda summary, paragraphs: self._show_hearsight_result(progress, summary, paragraphs, video_path)
             )
 
             self.hearsight_processor.error_occurred.connect(
@@ -1019,7 +1035,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         progress_dialog.setLabelText(text)
         progress_dialog.setValue(percent)
 
-    def _show_hearsight_result(self, progress_dialog, summary, paragraphs):
+    def _show_hearsight_result(self, progress_dialog, summary, paragraphs, video_path=None):
         """显示处理结果"""
         from videotrans.ui.hearsight_viewer import SummaryViewerDialog
         from PySide6.QtWidgets import QMessageBox
@@ -1027,8 +1043,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         try:
             progress_dialog.close()
 
-            # 显示结果对话框
-            viewer = SummaryViewerDialog(self)
+            # 显示结果对话框，传递video_path
+            viewer = SummaryViewerDialog(self, video_path=video_path)
             viewer.set_data(summary, paragraphs)
             viewer.exec()
 
