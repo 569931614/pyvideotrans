@@ -1001,11 +1001,22 @@ class SummaryManagerDialog(QDialog):
             print(f"   最终视频: {target_video}")
             print(f"   跳转时间: {start_time}秒")
 
-            # 使用内嵌播放器
+            # 使用内嵌播放器（非模态）
             from videotrans.ui.video_player import VideoPlayerDialog
 
+            # 创建播放器并保存引用，防止被垃圾回收
             player = VideoPlayerDialog(target_video, start_time, self)
-            player.exec()
+
+            # 使用show()而不是exec()，避免阻塞父窗口
+            player.show()
+
+            # 保存播放器引用，防止被垃圾回收
+            if not hasattr(self, '_video_players'):
+                self._video_players = []
+            self._video_players.append(player)
+
+            # 当播放器关闭时，从列表中移除
+            player.finished.connect(lambda: self._video_players.remove(player) if player in self._video_players else None)
 
         except Exception as e:
             import traceback
