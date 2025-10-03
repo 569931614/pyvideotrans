@@ -54,6 +54,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self._central_stack = None
         self.html_view = None
 
+        # 初始化侧边栏（延迟到initUI之后）
+        self.sidebar = None
+        QTimer.singleShot(50, self._init_sidebar)
+
         self._retranslateUi_from_logic()
         self.show()
         QTimer.singleShot(50, self._set_cache_set)
@@ -619,6 +623,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     self._central_stack.setCurrentWidget(self._original_central)
                 else:
                     self.setCentralWidget(self._original_central)
+
+            # 同步侧边栏状态
+            if hasattr(self, 'sidebar') and self.sidebar:
+                self.sidebar.set_html_ui_checked(enabled)
+
         except Exception:
             # fallback to original UI
             try:
@@ -899,6 +908,81 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         except Exception as e:
             print(f"添加HearSight按钮失败: {e}")
+
+    def _init_sidebar(self):
+        """初始化垂直侧边栏"""
+        try:
+            from videotrans.ui.sidebar import Sidebar
+            from PySide6.QtWidgets import QHBoxLayout, QWidget
+
+            # 创建侧边栏
+            self.sidebar = Sidebar(self)
+
+            # 连接信号
+            self.sidebar.hearsight_clicked.connect(self.open_hearsight)
+            self.sidebar.config_clicked.connect(self.open_hearsight_config)
+            self.sidebar.summary_clicked.connect(self.open_summary_manager)
+            self.sidebar.html_ui_clicked.connect(lambda: self._toggle_html_ui_from_sidebar(True))
+            self.sidebar.qt_ui_clicked.connect(lambda: self._toggle_html_ui_from_sidebar(False))
+            self.sidebar.settings_clicked.connect(self.open_settings)
+            self.sidebar.about_clicked.connect(self.show_about)
+
+            # 创建新的主容器
+            main_container = QWidget()
+            main_layout = QHBoxLayout(main_container)
+            main_layout.setContentsMargins(0, 0, 0, 0)
+            main_layout.setSpacing(0)
+
+            # 添加侧边栏
+            main_layout.addWidget(self.sidebar)
+
+            # 添加原有的中央部件
+            if self._central_stack:
+                main_layout.addWidget(self._central_stack)
+            else:
+                main_layout.addWidget(self.centralwidget)
+
+            # 替换中央部件
+            self.setCentralWidget(main_container)
+
+            print("✅ 侧边栏初始化成功")
+
+        except Exception as e:
+            print(f"❌ 侧边栏初始化失败: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _toggle_html_ui_from_sidebar(self, use_html):
+        """从侧边栏切换HTML UI"""
+        if hasattr(self, 'action_html_ui'):
+            self.action_html_ui.setChecked(use_html)
+        else:
+            self._toggle_html_ui(use_html)
+
+        # 更新侧边栏按钮状态
+        if self.sidebar:
+            self.sidebar.set_html_ui_checked(use_html)
+
+    def open_settings(self):
+        """打开设置对话框"""
+        from videotrans.ui.setini import SetINIForm
+        try:
+            dialog = SetINIForm(self)
+            dialog.exec()
+        except Exception as e:
+            print(f"打开设置对话框失败: {e}")
+
+    def show_about(self):
+        """显示关于对话框"""
+        from PySide6.QtWidgets import QMessageBox
+        QMessageBox.about(
+            self,
+            "关于 pyVideoTrans",
+            f"<h3>pyVideoTrans v3.0</h3>"
+            f"<p>智能视频翻译工具</p>"
+            f"<p>支持视频翻译、配音、字幕生成等功能</p>"
+            f"<p><a href='https://github.com/jianchang512/pyvideotrans'>GitHub</a></p>"
+        )
 
     def _load_hearsight_config(self):
         """加载HearSight配置"""

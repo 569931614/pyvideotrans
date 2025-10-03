@@ -37,7 +37,12 @@ class StartWindow(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground) # 窗口背景透明
 
         self.background_label = QLabel(self)
-        self.pixmap = QPixmap("./videotrans/styles/logo.png")
+        # 尝试加载新的JPEG启动图，如果不存在则使用原PNG
+        import os
+        logo_path = "./videotrans/styles/logo_new.jpeg"
+        if not os.path.exists(logo_path):
+            logo_path = "./videotrans/styles/logo.png"
+        self.pixmap = QPixmap(logo_path)
         self.background_label.setPixmap(self.pixmap)
         self.background_label.setScaledContents(True)
         self.background_label.setGeometry(self.rect())
