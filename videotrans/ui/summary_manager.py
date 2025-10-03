@@ -13,6 +13,18 @@ from typing import List, Dict, Any, Optional
 import os
 
 
+class CustomTextBrowser(QTextBrowser):
+    """自定义QTextBrowser，阻止默认的链接导航行为"""
+
+    def setSource(self, url):
+        """重写setSource，阻止默认的链接导航行为"""
+        print(f"⚠️ CustomTextBrowser.setSource被调用: {url.toString()}")
+        print(f"   不执行默认行为，保持内容不变")
+        # 不调用父类的setSource，阻止默认行为
+        # 这样点击链接不会尝试加载新内容
+        pass
+
+
 class SearchThread(QThread):
     """搜索线程"""
     finished = Signal(list)
@@ -439,15 +451,7 @@ class SummaryManagerDialog(QDialog):
         self.tab_widget.addTab(self.summary_tab, "📋 整体摘要")
 
         # Tab 2: 段落列表
-        # 创建自定义QTextBrowser，防止默认链接行为清空内容
-        class CustomTextBrowser(QTextBrowser):
-            def setSource(self, url):
-                """重写setSource，阻止默认的链接导航行为"""
-                print(f"⚠️ setSource被调用: {url.toString()}")
-                # 不调用父类的setSource，阻止默认行为
-                # 这样点击链接不会尝试加载新内容
-                pass
-
+        # 使用自定义QTextBrowser，防止默认链接行为清空内容
         self.paragraph_tab = CustomTextBrowser()  # 使用自定义QTextBrowser
         self.paragraph_tab.setReadOnly(True)
         self.paragraph_tab.setOpenExternalLinks(False)  # 禁用默认链接处理
@@ -485,6 +489,12 @@ class SummaryManagerDialog(QDialog):
 
     def load_videos(self):
         """加载视频列表"""
+        import traceback
+        print(f"\n📋 load_videos() 被调用")
+        print(f"   调用堆栈:")
+        for line in traceback.format_stack()[:-1]:
+            print(f"   {line.strip()}")
+
         try:
             from videotrans.hearsight.vector_store import get_vector_store
             vector_store = get_vector_store()
@@ -510,6 +520,7 @@ class SummaryManagerDialog(QDialog):
             self.stats_label.setText(f"总计: {len(self.videos)} 个视频")
 
             # 清空详情
+            print(f"⚠️ 清空段落详情（load_videos）")
             self.summary_tab.clear()
             self.paragraph_tab.clear()
             self.current_video = None
@@ -659,7 +670,9 @@ class SummaryManagerDialog(QDialog):
                 paragraphs_html += "</div>"
 
             paragraphs_html += "</div>"
+            print(f"📝 设置段落HTML内容，长度: {len(paragraphs_html)}")
             self.paragraph_tab.setHtml(paragraphs_html)
+            print(f"📝 设置后段落详情内容长度: {len(self.paragraph_tab.toPlainText())}")
 
         except Exception as e:
             QMessageBox.critical(self, "错误", f"加载视频详情失败：\n{str(e)}")
