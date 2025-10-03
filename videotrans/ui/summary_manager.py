@@ -8,9 +8,11 @@ from PySide6.QtWidgets import (
     QPushButton, QListWidget, QListWidgetItem, QTextEdit, QTextBrowser,
     QLineEdit, QLabel, QMessageBox, QFileDialog, QComboBox, QSpinBox
 )
-from PySide6.QtCore import Qt, Signal, QThread, QUrl
+from PySide6.QtCore import Qt, Signal, QThread, QUrl, QEvent
+from PySide6.QtGui import QTextCursor, QMouseEvent
 from typing import List, Dict, Any, Optional
 import os
+import re
 
 
 class CustomTextBrowser(QTextBrowser):
@@ -23,6 +25,14 @@ class CustomTextBrowser(QTextBrowser):
         # 不调用父类的setSource，阻止默认行为
         # 这样点击链接不会尝试加载新内容
         pass
+
+    def loadResource(self, type, url):
+        """重写loadResource，阻止资源加载"""
+        print(f"⚠️ CustomTextBrowser.loadResource被调用: type={type}, url={url.toString()}")
+        print(f"   不加载资源，返回空")
+        # 返回空，不加载任何资源
+        from PySide6.QtCore import QByteArray
+        return QByteArray()
 
 
 class SearchThread(QThread):
@@ -451,11 +461,12 @@ class SummaryManagerDialog(QDialog):
         self.tab_widget.addTab(self.summary_tab, "📋 整体摘要")
 
         # Tab 2: 段落列表
-        # 使用自定义QTextBrowser，防止默认链接行为清空内容
-        self.paragraph_tab = CustomTextBrowser()  # 使用自定义QTextBrowser
+        # 使用QTextEdit而不是QTextBrowser，避免链接处理问题
+        self.paragraph_tab = QTextEdit()
         self.paragraph_tab.setReadOnly(True)
-        self.paragraph_tab.setOpenExternalLinks(False)  # 禁用默认链接处理
-        self.paragraph_tab.anchorClicked.connect(self.on_time_link_clicked)  # 自定义链接处理
+        # QTextEdit不支持anchorClicked，需要使用其他方式处理链接点击
+        # 我们将使用鼠标点击事件来处理
+        self.paragraph_tab.viewport().installEventFilter(self)
         self.paragraph_tab.setStyleSheet("""
             QTextBrowser {
                 background-color: #121829;
@@ -903,6 +914,24 @@ class SummaryManagerDialog(QDialog):
 
             except Exception as e:
                 QMessageBox.critical(self, "错误", f"删除失败：\n{str(e)}")
+
+    def eventFilter(self, obj, event):
+        """事件过滤器，处理段落详情中的链接点击"""
+        if obj == self.paragraph_tab.viewport() and event.type() == QEvent.MouseButtonPress:
+            # 获取点击位置的光标
+            cursor = self.paragraph_tab.cursorForPosition(event.pos())
+            # 获取光标处的字符格式
+            char_format = cursor.charFormat()
+            # 检查是否是链接
+            if char_format.isAnchor():
+                anchor_href = char_format.anchorHref()
+                print(f"\n🔗 检测到链接点击: {anchor_href}")
+                # 创建QUrl对象
+                url = QUrl(anchor_href)
+                self.on_time_link_clicked(url)
+                return True  # 事件已处理
+
+        return super().eventFilter(obj, event)
 
     def on_time_link_clicked(self, url: QUrl):
         """处理时间链接点击"""
