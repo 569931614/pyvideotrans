@@ -200,17 +200,24 @@ class VectorStore:
 
         try:
             # 构建过滤条件
-            where = {}
+            where = None
+            conditions = []
             if video_id:
-                where["video_id"] = video_id
+                conditions.append({"video_id": video_id})
             if filter_type:
-                where["type"] = filter_type
+                conditions.append({"type": filter_type})
+
+            # 如果有多个条件，使用$and操作符
+            if len(conditions) > 1:
+                where = {"$and": conditions}
+            elif len(conditions) == 1:
+                where = conditions[0]
 
             # 执行查询
             results = self.collection.query(
                 query_texts=[query],
                 n_results=n_results,
-                where=where if where else None
+                where=where
             )
 
             # 格式化结果
@@ -293,8 +300,10 @@ class VectorStore:
             # 获取所有段落
             paragraphs = self.collection.get(
                 where={
-                    "video_id": video_id,
-                    "type": "paragraph"
+                    "$and": [
+                        {"video_id": video_id},
+                        {"type": "paragraph"}
+                    ]
                 }
             )
 

@@ -831,7 +831,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 QPushButton:hover {
                     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                         stop:0 #40d967, stop:1 #2dbd4e);
-                    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
                 }
                 QPushButton:pressed {
                     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
@@ -857,7 +856,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 QPushButton:hover {
                     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                         stop:0 #8a98a7, stop:1 #7a8290);
-                    box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
                 }
                 QPushButton:pressed {
                     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
@@ -883,7 +881,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 QPushButton:hover {
                     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                         stop:0 #6ab9ff, stop:1 #5aa9ff);
-                    box-shadow: 0 4px 8px rgba(74, 158, 255, 0.3);
                 }
                 QPushButton:pressed {
                     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
