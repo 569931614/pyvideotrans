@@ -20,7 +20,7 @@ class VideoPlayerDialog(QDialog):
     def __init__(self, video_path: str, start_time: float = 0, parent=None):
         """
         初始化视频播放器
-        
+
         Args:
             video_path: 视频文件路径
             start_time: 开始播放时间（秒）
@@ -29,27 +29,33 @@ class VideoPlayerDialog(QDialog):
         super().__init__(parent)
         self.video_path = video_path
         self.start_time = start_time
-        
+        self.has_seeked = False  # 标记是否已经跳转过
+
+        print(f"\n🎬 初始化视频播放器...")
+        print(f"   视频路径: {video_path}")
+        print(f"   开始时间: {start_time}秒")
+
         self.setWindowTitle("视频播放器")
         self.resize(960, 600)
-        
+
         # 创建媒体播放器
         self.player = QMediaPlayer(self)
         self.audio_output = QAudioOutput(self)
         self.player.setAudioOutput(self.audio_output)
-        
+
         # 创建视频显示控件
         self.video_widget = QVideoWidget(self)
         self.player.setVideoOutput(self.video_widget)
-        
+
         # 初始化UI
         self.init_ui()
-        
+
         # 连接信号
         self.player.positionChanged.connect(self.on_position_changed)
         self.player.durationChanged.connect(self.on_duration_changed)
         self.player.playbackStateChanged.connect(self.on_state_changed)
-        
+        self.player.mediaStatusChanged.connect(self.on_media_status_changed)
+
         # 加载视频
         self.load_video()
     
@@ -154,9 +160,11 @@ class VideoPlayerDialog(QDialog):
     
     def load_video(self):
         """加载视频"""
+        print(f"📂 加载视频文件: {self.video_path}")
         self.player.setSource(QUrl.fromLocalFile(self.video_path))
         # 设置初始音量
         self.set_volume(70)
+        print(f"✅ 视频加载命令已发送")
     
     def toggle_play(self):
         """切换播放/暂停"""
@@ -194,22 +202,56 @@ class VideoPlayerDialog(QDialog):
     
     def on_duration_changed(self, duration):
         """视频时长改变"""
+        print(f"⏱️ 视频时长: {duration}ms ({duration/1000:.2f}秒)")
         self.position_slider.setRange(0, duration)
         self.update_time_label()
-        
-        # 如果设置了开始时间，跳转到该位置
-        if self.start_time > 0:
-            self.player.setPosition(int(self.start_time * 1000))
-            self.start_time = 0  # 只跳转一次
+
+        # 如果设置了开始时间且还没跳转过，跳转到该位置
+        if self.start_time > 0 and not self.has_seeked:
+            seek_position = int(self.start_time * 1000)
+            print(f"⏩ 跳转到: {seek_position}ms ({self.start_time}秒)")
+            self.player.setPosition(seek_position)
+            self.has_seeked = True
             # 自动开始播放
+            print(f"▶️ 开始播放...")
             self.player.play()
     
     def on_state_changed(self, state):
         """播放状态改变"""
+        state_names = {
+            QMediaPlayer.StoppedState: "停止",
+            QMediaPlayer.PlayingState: "播放中",
+            QMediaPlayer.PausedState: "暂停"
+        }
+        print(f"🎵 播放状态: {state_names.get(state, '未知')}")
+
         if state == QMediaPlayer.PlayingState:
             self.play_btn.setIcon(self.style().standardIcon(QStyle.SP_MediaPause))
         else:
             self.play_btn.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
+
+    def on_media_status_changed(self, status):
+        """媒体状态改变"""
+        status_names = {
+            QMediaPlayer.NoMedia: "无媒体",
+            QMediaPlayer.LoadingMedia: "加载中",
+            QMediaPlayer.LoadedMedia: "已加载",
+            QMediaPlayer.StalledMedia: "停滞",
+            QMediaPlayer.BufferingMedia: "缓冲中",
+            QMediaPlayer.BufferedMedia: "已缓冲",
+            QMediaPlayer.EndOfMedia: "播放结束",
+            QMediaPlayer.InvalidMedia: "无效媒体"
+        }
+        print(f"📡 媒体状态: {status_names.get(status, '未知')}")
+
+        # 当媒体加载完成且还没跳转时，执行跳转
+        if status == QMediaPlayer.LoadedMedia and self.start_time > 0 and not self.has_seeked:
+            seek_position = int(self.start_time * 1000)
+            print(f"⏩ [LoadedMedia] 跳转到: {seek_position}ms ({self.start_time}秒)")
+            self.player.setPosition(seek_position)
+            self.has_seeked = True
+            print(f"▶️ [LoadedMedia] 开始播放...")
+            self.player.play()
     
     def update_time_label(self):
         """更新时间标签"""

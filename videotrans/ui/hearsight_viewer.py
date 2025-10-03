@@ -382,10 +382,22 @@ class SummaryViewerDialog(QDialog):
         Returns:
             目标视频路径，如果找不到则返回原始路径
         """
+        print(f"\n🔍 开始查找目标视频...")
+        print(f"   原始路径: {source_video_path}")
+
+        # 检查原始视频是否存在
+        if not os.path.exists(source_video_path):
+            print(f"   ⚠️ 原始视频不存在！")
+            return source_video_path
+
         # 获取视频目录和文件名
         video_dir = os.path.dirname(source_video_path)
         video_basename = os.path.splitext(os.path.basename(source_video_path))[0]
         video_ext = os.path.splitext(source_video_path)[1]
+
+        print(f"   目录: {video_dir}")
+        print(f"   文件名: {video_basename}")
+        print(f"   扩展名: {video_ext}")
 
         # 常见的目标视频命名模式
         target_patterns = [
@@ -397,14 +409,18 @@ class SummaryViewerDialog(QDialog):
         ]
 
         # 查找目标视频
-        for pattern in target_patterns:
+        print(f"   查找目标视频...")
+        for i, pattern in enumerate(target_patterns, 1):
             target_path = os.path.join(video_dir, pattern)
+            print(f"   [{i}] 检查: {os.path.basename(target_path)}")
             if os.path.exists(target_path):
-                print(f"✅ 找到目标视频: {target_path}")
+                print(f"   ✅ 找到目标视频: {target_path}")
                 return target_path
+            else:
+                print(f"       不存在")
 
         # 如果找不到，返回原始视频
-        print(f"⚠️ 未找到目标视频，使用原始视频: {source_video_path}")
+        print(f"   ⚠️ 未找到目标视频，使用原始视频: {source_video_path}")
         return source_video_path
 
     def on_paragraph_double_clicked(self, item: QListWidgetItem):
@@ -431,8 +447,16 @@ class SummaryViewerDialog(QDialog):
         start_time = para.get("start_time", 0.0)
 
         try:
+            print(f"\n▶️ 准备播放视频...")
+            print(f"   视频路径: {self.video_path}")
+            print(f"   开始时间: {start_time}秒")
+
             # 查找翻译后的目标视频
             target_video = self.find_target_video(self.video_path)
+
+            print(f"\n🎬 打开播放器...")
+            print(f"   最终视频: {target_video}")
+            print(f"   跳转时间: {start_time}秒")
 
             # 使用内嵌播放器
             from videotrans.ui.video_player import VideoPlayerDialog
@@ -442,6 +466,8 @@ class SummaryViewerDialog(QDialog):
         except Exception as e:
             import traceback
             error_detail = traceback.format_exc()
+            print(f"\n❌ 播放失败: {e}")
+            print(error_detail)
             QMessageBox.critical(
                 self,
                 "播放失败",
