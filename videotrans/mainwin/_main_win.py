@@ -55,9 +55,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.html_view = None
 
         # 初始化侧边栏（延迟到initUI之后）
-        # 已禁用侧边栏
         self.sidebar = None
-        # QTimer.singleShot(50, self._init_sidebar)
+        QTimer.singleShot(50, self._init_sidebar)
 
         self._retranslateUi_from_logic()
         self.show()
@@ -900,15 +899,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.summary_manager_btn.clicked.connect(self.open_summary_manager)
             self.summary_manager_btn.setCursor(Qt.PointingHandCursor)
 
-            # 添加到工具栏
-            if hasattr(self, 'toolBar'):
-                self.toolBar.addSeparator()
-                self.toolBar.addWidget(self.hearsight_btn)
-                self.toolBar.addWidget(self.hearsight_config_btn)
-                self.toolBar.addWidget(self.summary_manager_btn)
+            # 添加到工具栏 - 已禁用，改用侧边栏
+            # if hasattr(self, 'toolBar'):
+            #     self.toolBar.addSeparator()
+            #     self.toolBar.addWidget(self.hearsight_btn)
+            #     self.toolBar.addWidget(self.hearsight_config_btn)
+            #     self.toolBar.addWidget(self.summary_manager_btn)
 
         except Exception as e:
-            print(f"添加HearSight按钮失败: {e}")
+            print(f"初始化HearSight按钮失败: {e}")
 
     def _init_sidebar(self):
         """初始化垂直侧边栏"""
