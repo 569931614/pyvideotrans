@@ -161,7 +161,7 @@
     "proxyerrortitle": "Erro de Proxy",
     "shoundselecttargetlanguage": "É necessário selecionar um idioma de destino",
     "proxyerrorbody": "Falha ao acessar os serviços do Google. Configure o proxy corretamente.",
-    "softname": "translateVideo",
+    "softname": "BDvideoTrans",
     "anerror": "Ocorreu um erro",
     "selectvideodir": "Você deve selecionar o vídeo a ser traduzido",
     "sourenotequaltarget": "O idioma de origem e o idioma de destino não podem ser iguais",

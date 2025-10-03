@@ -146,8 +146,8 @@ class Sidebar(QWidget):
         logo_section = QWidget()
         logo_layout = QVBoxLayout(logo_section)
         logo_layout.setContentsMargins(16, 20, 16, 20)
-        
-        app_name = QLabel("pyVideoTrans")
+
+        app_name = QLabel("BDvideoTrans")
         app_name.setStyleSheet("""
             QLabel {
                 color: #e8eef7;
@@ -233,7 +233,7 @@ class Sidebar(QWidget):
         
         self.about_btn = SidebarButton(
             "ℹ️", "关于",
-            "关于pyVideoTrans"
+            "关于BDvideoTrans"
         )
         self.about_btn.clicked.connect(self.about_clicked.emit)
         content_layout.addWidget(self.about_btn)

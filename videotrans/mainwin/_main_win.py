@@ -55,8 +55,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.html_view = None
 
         # 初始化侧边栏（延迟到initUI之后）
+        # 已禁用侧边栏
         self.sidebar = None
-        QTimer.singleShot(50, self._init_sidebar)
+        # QTimer.singleShot(50, self._init_sidebar)
 
         self._retranslateUi_from_logic()
         self.show()
@@ -292,7 +293,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             pass
 
     def _apply_saved_theme(self):
-        sets = QSettings("pyvideotrans", "settings")
+        sets = QSettings("BDvideoTrans", "settings")
         theme = sets.value("theme", "dark")
         self._load_theme(theme)
         if hasattr(self, 'action_theme_light') and self.action_theme_light:
@@ -301,7 +302,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def _toggle_theme(self, checked: bool):
         theme = 'light' if checked else 'dark'
         self._load_theme(theme)
-        sets = QSettings("pyvideotrans", "settings")
+        sets = QSettings("BDvideoTrans", "settings")
         sets.setValue("theme", theme)
 
     def _setup_theme_toggle(self):
@@ -977,11 +978,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         from PySide6.QtWidgets import QMessageBox
         QMessageBox.about(
             self,
-            "关于 pyVideoTrans",
-            f"<h3>pyVideoTrans v3.0</h3>"
+            "关于 BDvideoTrans",
+            f"<h3>BDvideoTrans v3.0</h3>"
             f"<p>智能视频翻译工具</p>"
             f"<p>支持视频翻译、配音、字幕生成等功能</p>"
-            f"<p><a href='https://github.com/jianchang512/pyvideotrans'>GitHub</a></p>"
         )
 
     def _load_hearsight_config(self):

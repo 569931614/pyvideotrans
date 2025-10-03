@@ -1,6 +1,6 @@
-translateVideo
+BDvideoTrans
 
-# translateVideo
+# BDvideoTrans
 
 这是一个视频翻译配音工具，可将一种语言的视频翻译为指定语言的视频，自动生成和添加该语言的字幕和配音。并支持API调用(v3.0以下版本，以上久未更新)
 
@@ -9,7 +9,7 @@ translateVideo
 
 文字翻译支持 `微软翻译|Google翻译|百度翻译|腾讯翻译|ChatGPT|AzureAI|Gemini|DeepSeek|claude|DeepL|DeepLX|字节火山|离线翻译OTT|自定义API等`
 
-文字合成语音支持 `Edge tts` `Google tts` `Azure AI TTS` `Openai TTS` `Elevenlabs TTS` `自定义TTS服务器api` `GPT-SoVITS` `F5-TTS` `Index-tts` `ChatterBox` `Gemini-tts` [clone-voice](https://github.com/jianchang512/clone-voice)  [ChatTTS-ui](https://github.com/jianchang512/ChatTTS-ui)  [Fish TTS](https://github.com/fishaudio/fish-speech)  [CosyVoice](https://github.com/FunAudioLLM/CosyVoice) 
+文字合成语音支持 `Edge tts` `Google tts` `Azure AI TTS` `Openai TTS` `Elevenlabs TTS` `自定义TTS服务器api` `GPT-SoVITS` `F5-TTS` `Index-tts` `ChatterBox` `Gemini-tts` `clone-voice` `ChatTTS-ui` `Fish TTS` `CosyVoice`
 
 允许保留背景伴奏音乐等(基于uvr5)
 
@@ -49,15 +49,9 @@ translateVideo
 
 ----
 
-![pyvideotrans-home](https://github.com/user-attachments/assets/b2f95a7f-b4e5-4a6d-b2a5-eb6cd22531e0)
-
-[![Open In Colab](https://img.shields.io/badge/Colab-F9AB00?style=for-the-badge&logo=googlecolab&color=525252)](https://colab.research.google.com/drive/1kPTeAMz3LnWRnGmabcz4AWW42hiehmfm?usp=sharing)
-
 ## 预打包版本(仅win10/win11可用，MacOS/Linux系统使用源码部署)
 
 > 使用pyinstaller打包，未做免杀和签名，杀软可能报毒，请加入信任名单或使用源码部署
-
-0. [点击去下载预打包版,解压到无空格的英文目录后，双击 sp.exe (https://github.com/jianchang512/pyvideotrans/releases)
 
 1. 解压到英文路径下，并且路径中不含有空格。解压后双击 sp.exe  (若遇到权限问题可右键使用管理员权限打开)
 
@@ -70,8 +64,6 @@ translateVideo
 0. 打开终端窗口，分别执行如下命令
 	
 	> 执行前确保已安装 Homebrew，如果你没有安装 Homebrew,那么需要先安装
-	>
-	> 执行命令安装 Homebrew：  `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
 	>
 	> 安装完成后，执行： `eval $(brew --config)`
 	>
@@ -101,9 +93,8 @@ translateVideo
 
 
 1. 创建不含空格和中文的文件夹，在终端中进入该文件夹。
-2. 终端中执行命令 `git clone https://github.com/jianchang512/pyvideotrans `
-3. 执行命令 `cd pyvideotrans`
-4. 继续执行 `python -m venv venv`
+2. 执行命令 `cd pyvideotrans`
+3. 继续执行 `python -m venv venv`
 5. 继续执行命令 `source ./venv/bin/activate`，执行完毕查看确认终端命令提示符已变成已`(venv)`开头,以下命令必须确定终端提示符是以`(venv)`开头
 6. 执行 `pip install -r requirements.txt `，如果提示失败，执行如下2条命令切换pip镜像到阿里镜像
 
@@ -180,9 +171,8 @@ apt-get install ffmpeg
 
 
 1. 创建个不含空格和中文的文件夹， 从终端打开该文件夹。
-3. 终端中执行命令 `git clone https://github.com/jianchang512/pyvideotrans`
-4. 继续执行命令 `cd pyvideotrans`
-5. 继续执行 `python -m venv venv`
+2. 继续执行命令 `cd pyvideotrans`
+3. 继续执行 `python -m venv venv`
 6. 继续执行命令 `source .\venv\scripts\activate`，执行完毕查看确认终端命令提示符已变成已`(venv)`开头,以下命令必须确定终端提示符是以`(venv)`开头
 7. 执行 `pip install -r requirements.txt`，如果提示失败，执行如下2条命令切换pip镜像到阿里镜像
 
@@ -214,11 +204,9 @@ apt-get install ffmpeg
 
    **打开一个cmd，执行 `python -V`，如果输出不是 `3.10.4`,说明安装出错，或没有加入 `Add to PATH`,请重新安装**
 
-1. 打开 https://github.com/git-for-windows/git/releases/download/v2.45.0.windows.1/Git-2.45.0-64-bit.exe ，下载git，下载后双击一路下一步。
-2. 找个不含空格和中文的文件夹，地址栏中输入 `cmd`回车，打开终端，以下命令均在该终端中执行
-3. 执行命令 `git clone https://github.com/jianchang512/pyvideotrans`
-4. 继续执行命令 `cd pyvideotrans`
-5. 继续执行 `python -m venv venv`
+1. 找个不含空格和中文的文件夹，地址栏中输入 `cmd`回车，打开终端，以下命令均在该终端中执行
+2. 继续执行命令 `cd pyvideotrans`
+3. 继续执行 `python -m venv venv`
 6. 继续执行命令 `venv\Scripts\activate`,执行后请查看确认命令行开头已变成了`(venv)`,否则说明出错
 7. 执行 `pip install -r requirements.txt `，如果提示失败，执行如下2条命令切换pip镜像到阿里镜像
 
@@ -286,39 +274,16 @@ pip install ctranslate2==3.24.0
 
 # 软件预览截图
 
-![pyvideotrans-home](https://github.com/user-attachments/assets/b2f95a7f-b4e5-4a6d-b2a5-eb6cd22531e0)
-
-![image](https://github.com/user-attachments/assets/b5d1b5fb-c579-477c-bca4-6c5e9aa14d7d)
-
-
-
-# 相关联项目
-
-[ChatTTS-ui:使用ChatTTS合成声音的UI界面](https://github.com/jianchang512/ChatTTS-ui)
-
-[OTT:本地离线文字翻译工具](https://github.com/jianchang512/ott)
-
-[声音克隆工具:用任意音色合成语音](https://github.com/jianchang512/clone-voice)
-
-[语音识别工具:本地离线的语音识别转文字工具](https://github.com/jianchang512/stt)
-
-[人声背景乐分离:人声和背景音乐分离工具](https://github.com/jianchang512/vocal-separate)
-
-[GPT-SoVITS的api.py改良版](https://github.com/jianchang512/gptsovits-api)
-
-[适配 CosyVoice 的 api.py](https://github.com/jianchang512/cosyvoice-api)
-
-
 ## 致谢
 
 > 本程序主要依赖的部分开源项目
 
-1. [ffmpeg](https://github.com/FFmpeg/FFmpeg)
-2. [PySide6](https://pypi.org/project/PySide6/)
-3. [edge-tts](https://github.com/rany2/edge-tts)
-4. [faster-whisper](https://github.com/SYSTRAN/faster-whisper)
-5. [openai-whisper](https://github.com/openai/whisper)
-6. [pydub](https://github.com/jiaaro/pydub)
+1. ffmpeg
+2. PySide6
+3. edge-tts
+4. faster-whisper
+5. openai-whisper
+6. pydub
 
 
 

@@ -53,7 +53,7 @@ class StartWindow(QWidget):
         h_layout = QHBoxLayout()
         v_layout.addLayout(h_layout)
         h_layout.addStretch(1)
-        self.status_label = QLabel(f"pyVideoTrans {VERSION} Loading...")
+        self.status_label = QLabel(f"BDvideoTrans {VERSION} Loading...")
         self.status_label.setStyleSheet("font-size:16px; color:white; background-color:transparent;")
         h_layout.addWidget(self.status_label)
         h_layout.addStretch(1)
@@ -108,7 +108,7 @@ def initialize_full_app(start_window, app_instance):
     try:
         from PySide6.QtCore import QSettings
         screen = QGuiApplication.primaryScreen().geometry()
-        sets = QSettings("pyvideotrans", "settings")
+        sets = QSettings("BDvideoTrans", "settings")
         w, h = int(screen.width() * 0.85), int(screen.height() * 0.85)
         size = sets.value("windowSize", QSize(w, h))
         w, h = size.width(), size.height()        
