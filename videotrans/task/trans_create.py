@@ -663,36 +663,54 @@ class TransCreate(BaseTask):
         def _hearsight_local():
             try:
                 from videotrans.configure import config as _cfg
+
+                # Debug: Log all params
+                _cfg.logger.info(f"🔍 HearSight Debug - enable_hearsight param: {_cfg.params.get('enable_hearsight', False)}")
+                _cfg.logger.info(f"🔍 HearSight Debug - all params keys: {list(_cfg.params.keys())}")
+
                 # Check if enable_hearsight is checked
                 if not _cfg.params.get('enable_hearsight', False):
+                    _cfg.logger.info("⏭️ HearSight is not enabled, skipping summary generation")
                     return
+
+                _cfg.logger.info("✅ HearSight is enabled, starting summary generation...")
 
                 # Check if HearSight config exists
                 hearsight_cfg = getattr(_cfg, 'hearsight_config', None)
                 if not hearsight_cfg:
-                    _cfg.logger.info("HearSight config not found, skipping summary generation")
+                    _cfg.logger.warning("⚠️ HearSight config not found, skipping summary generation")
                     return
+
+                _cfg.logger.info(f"✅ HearSight config loaded: {list(hearsight_cfg.keys())}")
 
                 llm_cfg = hearsight_cfg.get('llm', {})
                 if not llm_cfg.get('api_key'):
-                    _cfg.logger.info("HearSight API key not configured, skipping summary generation")
+                    _cfg.logger.warning("⚠️ HearSight API key not configured, skipping summary generation")
                     return
+
+                _cfg.logger.info("✅ HearSight API key configured")
 
                 # Find SRT file (prefer target, fallback to source)
                 srt_file = None
+                _cfg.logger.info(f"🔍 Looking for SRT files...")
+                _cfg.logger.info(f"   target_sub: {self.cfg.get('target_sub', 'None')}")
+                _cfg.logger.info(f"   source_sub: {self.cfg.get('source_sub', 'None')}")
+
                 try:
                     if self.cfg.get('target_sub') and Path(self.cfg['target_sub']).exists():
                         srt_file = self.cfg['target_sub']
+                        _cfg.logger.info(f"✅ Found target SRT: {srt_file}")
                     elif self.cfg.get('source_sub') and Path(self.cfg['source_sub']).exists():
                         srt_file = self.cfg['source_sub']
-                except Exception:
-                    pass
+                        _cfg.logger.info(f"✅ Found source SRT: {srt_file}")
+                except Exception as e:
+                    _cfg.logger.error(f"❌ Error checking SRT files: {e}")
 
                 if not srt_file:
-                    _cfg.logger.info("No SRT file found, skipping HearSight summary")
+                    _cfg.logger.warning("⚠️ No SRT file found, skipping HearSight summary")
                     return
 
-                _cfg.logger.info(f"Starting HearSight summary generation for: {srt_file}")
+                _cfg.logger.info(f"🚀 Starting HearSight summary generation for: {srt_file}")
 
                 # Import HearSight modules
                 from videotrans.hearsight.segment_merger import merge_srt_to_paragraphs

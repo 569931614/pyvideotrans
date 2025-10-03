@@ -630,6 +630,16 @@ _gemini_recogn_txt = 'gemini_recogn.txt' if defaulelang == 'zh' else 'gemini_rec
 if Path(ROOT_DIR + f'/videotrans/{_gemini_recogn_txt}').exists():
     params['gemini_srtprompt'] = Path(ROOT_DIR + f'/videotrans/{_gemini_recogn_txt}').read_text(encoding='utf-8')
 
+# 加载HearSight配置
+hearsight_config = None
+_hearsight_config_path = Path(ROOT_DIR) / 'hearsight_config.json'
+if _hearsight_config_path.exists():
+    try:
+        hearsight_config = json.loads(_hearsight_config_path.read_text(encoding='utf-8'))
+        logger.info(f"✅ HearSight配置加载成功")
+    except Exception as e:
+        logger.warning(f"⚠️ HearSight配置加载失败: {e}")
+
 POSTION_ASS_KV = {
     7: "left-top", 8: "top", 9: "right-top",
     4: "left-center", 5: "center", 6: "right-center",

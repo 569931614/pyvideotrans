@@ -803,6 +803,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             try:
                 with open(config_path, 'r', encoding='utf-8') as f:
                     self.hearsight_config = json.load(f)
+                    # 同时保存到全局config对象，供trans_create.py使用
+                    config.hearsight_config = self.hearsight_config
+                    print(f"✅ HearSight配置加载成功")
             except Exception as e:
                 print(f"加载HearSight配置失败: {e}")
 
