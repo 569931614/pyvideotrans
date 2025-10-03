@@ -2,7 +2,7 @@
 
 ---
 
-[👑 Dona al progetto](../about.md) | [Link di invito a Discord](https://discord.gg/mTh5Cu5Bqm) 
+
 
 ----
 

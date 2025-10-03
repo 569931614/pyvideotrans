@@ -98,7 +98,8 @@ class TransCreate(BaseTask):
         }
 
         final_cfg = cfg_default.copy()
-        final_cfg.update(self.cfg)
+        if self.cfg:
+            final_cfg.update(self.cfg)
 
         self.cfg = final_cfg
         self.video_codec_num = int(config.settings.get('video_codec', 264))
@@ -170,7 +171,7 @@ class TransCreate(BaseTask):
             self.shoud_separate = True
 
         # 如果存在字幕文本，则视为原始语言字幕，不再识别
-        if "subtitles" in self.cfg and self.cfg['subtitles'].strip():
+        if "subtitles" in self.cfg and self.cfg['subtitles'] and self.cfg['subtitles'].strip():
             # 如果不存在目标语言，则视为原始语言字幕
             sub_file = self.cfg['source_sub']
             with open(sub_file, 'w', encoding="utf-8", errors="ignore") as f:
@@ -603,6 +604,175 @@ class TransCreate(BaseTask):
         self.precent = 100
         self._signal(text=f"{self.cfg['name']}", type='succeed')
         tools.send_notification(config.transobj['Succeed'], f"{self.cfg['basename']}")
+        # HearSight integration: summarize subtitles and store (optional, non-blocking)
+        def _hearsight_post():
+            try:
+                from videotrans.configure import config as _cfg
+                hs_url = (_cfg.params.get('hearsight_url') or '').strip()
+                hs_path = (_cfg.params.get('hearsight_summarize_path') or '/api/summarize').strip()
+                if not hs_url:
+                    return
+                import requests, json
+                from videotrans.util import help_srt as _hsrt
+                # choose subtitle: prefer target, fallback to source
+                sub_file = None
+                try:
+                    if self.cfg.get('target_sub') and Path(self.cfg['target_sub']).exists():
+                        sub_file = self.cfg['target_sub']
+                    elif self.cfg.get('source_sub') and Path(self.cfg['source_sub']).exists():
+                        sub_file = self.cfg['source_sub']
+                except Exception:
+                    sub_file = None
+                if not sub_file:
+                    return
+                subs = _hsrt.get_subtitle_from_srt(sub_file)
+                segments = []
+                for it in subs:
+                    try:
+                        st = float(it.get('start_time', 0)) / 1000.0
+                        et = float(it.get('end_time', 0)) / 1000.0
+                        if et <= st:
+                            continue
+                        segments.append({
+                            'index': int(it.get('line', len(segments) + 1)),
+                            'sentence': str(it.get('text', '')).strip(),
+                            'start_time': st,
+                            'end_time': et,
+                        })
+                    except Exception:
+                        continue
+                if not segments:
+                    return
+                payload = {
+                    'segments': segments,
+                    'media_path': self.cfg.get('targetdir_mp4') or self.cfg.get('name'),
+                    'title': self.cfg.get('basename'),
+                }
+                url = hs_url.rstrip('/') + (hs_path if hs_path.startswith('/') else '/' + hs_path)
+                resp = requests.post(url, json=payload, timeout=60)
+                _cfg.logger.info(f"HearSight summarize status={resp.status_code} body={resp.text[:500]}")
+            except Exception as e:
+                try:
+                    _cfg.logger.warning(f"HearSight summarize error: {e}")
+                except Exception:
+                    pass
+        import threading as _th
+        _th.Thread(target=_hearsight_post, daemon=True).start()
+
+        # Local HearSight integration: generate summary and store in vector database
+        def _hearsight_local():
+            try:
+                from videotrans.configure import config as _cfg
+                # Check if enable_hearsight is checked
+                if not _cfg.params.get('enable_hearsight', False):
+                    return
+
+                # Check if HearSight config exists
+                hearsight_cfg = getattr(_cfg, 'hearsight_config', None)
+                if not hearsight_cfg:
+                    _cfg.logger.info("HearSight config not found, skipping summary generation")
+                    return
+
+                llm_cfg = hearsight_cfg.get('llm', {})
+                if not llm_cfg.get('api_key'):
+                    _cfg.logger.info("HearSight API key not configured, skipping summary generation")
+                    return
+
+                # Find SRT file (prefer target, fallback to source)
+                srt_file = None
+                try:
+                    if self.cfg.get('target_sub') and Path(self.cfg['target_sub']).exists():
+                        srt_file = self.cfg['target_sub']
+                    elif self.cfg.get('source_sub') and Path(self.cfg['source_sub']).exists():
+                        srt_file = self.cfg['source_sub']
+                except Exception:
+                    pass
+
+                if not srt_file:
+                    _cfg.logger.info("No SRT file found, skipping HearSight summary")
+                    return
+
+                _cfg.logger.info(f"Starting HearSight summary generation for: {srt_file}")
+
+                # Import HearSight modules
+                from videotrans.hearsight.segment_merger import merge_srt_to_paragraphs
+                from videotrans.hearsight.summarizer import generate_summary, generate_paragraph_summaries
+                from videotrans.hearsight.vector_store import get_vector_store
+
+                # Step 1: Merge paragraphs
+                merge_cfg = hearsight_cfg.get('merge', {})
+                paragraphs = merge_srt_to_paragraphs(
+                    srt_path=srt_file,
+                    max_gap=merge_cfg.get('max_gap', 2.0),
+                    max_duration=merge_cfg.get('max_duration', 30.0),
+                    max_chars=merge_cfg.get('max_chars', 200)
+                )
+
+                if not paragraphs:
+                    _cfg.logger.warning("No paragraphs generated from SRT file")
+                    return
+
+                _cfg.logger.info(f"Merged {len(paragraphs)} paragraphs")
+
+                # Step 2: Generate overall summary
+                summary = generate_summary(
+                    paragraphs=paragraphs,
+                    api_key=llm_cfg['api_key'],
+                    base_url=llm_cfg.get('base_url', 'https://api.openai.com/v1'),
+                    model=llm_cfg.get('model', 'gpt-3.5-turbo'),
+                    temperature=llm_cfg.get('temperature', 0.3),
+                    timeout=llm_cfg.get('timeout', 120)
+                )
+
+                _cfg.logger.info(f"Generated overall summary: {summary.get('topic', 'N/A')}")
+
+                # Step 3: Generate paragraph summaries
+                paragraphs_with_summaries = generate_paragraph_summaries(
+                    paragraphs=paragraphs,
+                    api_key=llm_cfg['api_key'],
+                    base_url=llm_cfg.get('base_url', 'https://api.openai.com/v1'),
+                    model=llm_cfg.get('model', 'gpt-3.5-turbo'),
+                    temperature=llm_cfg.get('temperature', 0.3),
+                    timeout=llm_cfg.get('timeout', 60)
+                )
+
+                _cfg.logger.info(f"Generated {len(paragraphs_with_summaries)} paragraph summaries")
+
+                # Step 4: Store in vector database
+                vector_store = get_vector_store()
+                video_path = self.cfg.get('name', '')
+
+                metadata = {
+                    'basename': self.cfg.get('basename', ''),
+                    'source_language': self.cfg.get('source_language_code', ''),
+                    'target_language': self.cfg.get('target_language_code', ''),
+                    'app_mode': self.cfg.get('app_mode', '')
+                }
+
+                success = vector_store.store_summary(
+                    video_path=video_path,
+                    summary=summary,
+                    paragraphs=paragraphs_with_summaries,
+                    metadata=metadata
+                )
+
+                if success:
+                    _cfg.logger.info(f"✅ Successfully stored HearSight summary in vector database")
+                else:
+                    _cfg.logger.warning(f"⚠️ Failed to store HearSight summary in vector database")
+
+            except Exception as e:
+                try:
+                    from videotrans.configure import config as _cfg
+                    _cfg.logger.error(f"HearSight local summary error: {e}")
+                    import traceback
+                    _cfg.logger.error(traceback.format_exc())
+                except Exception:
+                    pass
+
+        # Start local HearSight processing in background thread
+        _th.Thread(target=_hearsight_local, daemon=True).start()
+
         try:
             if self.cfg['only_video']:
                 mp4_path = Path(self.cfg['targetdir_mp4'])
@@ -1180,7 +1350,7 @@ class TransCreate(BaseTask):
 
 
         如果觉得该项目对你有价值，并希望该项目能一直稳定持续维护，欢迎各位小额赞助，有了一定资金支持，我将能够持续投入更多时间和精力
-        捐助地址：https://pvt9.com/about
+
 
         ====
 
@@ -1196,14 +1366,13 @@ class TransCreate(BaseTask):
         instrument.wav = The background music audio file separated from the original video
 
 
-        If you feel that this project is valuable to you and hope that it can be maintained consistently, we welcome small sponsorships. With some financial support, I will be able to continue to invest more time and energy
-        Donation address: https://ko-fi.com/jianchang512
+
+
 
 
         ====
 
-        Github: https://github.com/jianchang512/pyvideotrans
-        Docs: https://pvt9.com
+
 
                         """)
         except:

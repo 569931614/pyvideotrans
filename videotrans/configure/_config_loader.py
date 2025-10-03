@@ -68,14 +68,14 @@ if sys.platform == 'win32':
         os.environ['PATH'] = os.environ['PATH'] + f';{ROOT_DIR}/_internal/torch/lib'
 
 os.environ['QT_API'] = 'pyside6'
-os.environ['SOFT_NAME'] = 'pyvideotrans'
+os.environ['SOFT_NAME'] = 'translateVideo'
 os.environ['MODELSCOPE_CACHE'] = ROOT_DIR + "/models"
 os.environ['HF_HOME'] = ROOT_DIR + "/models"
 os.environ['HF_HUB_DISABLE_SYMLINKS_WARNING'] = 'true'
 os.environ['HF_HUB_DISABLE_PROGRESS_BARS'] = 'true'
 # 语言
-_env_lang = os.environ.get('PYVIDEOTRANS_LANG')  # 新增：读取环境变量
-if _env_lang:  # 新增：如果环境变量存在，则使用它
+_env_lang = os.environ.get('TRANSLATEVIDEO_LANG')  # 读取环境变量（已更名）
+if _env_lang:
     defaulelang = _env_lang
 else:  # 原有逻辑
     try:
@@ -180,7 +180,7 @@ def parse_init(update_data=None):
         with  open(ROOT_DIR + "/videotrans/cfg.json", 'w', encoding='utf-8') as f:
             f.write(json.dumps(update_data, ensure_ascii=False))
         return update_data
-    _defaulthomedir = (Path.home() / 'Videos/pyvideotrans').as_posix()
+    _defaulthomedir = (Path.home() / 'Videos/translateVideo').as_posix()
     try:
         Path(_defaulthomedir).mkdir(parents=True, exist_ok=True)
     except:
@@ -552,12 +552,14 @@ def getset_params(obj=None):
         "zh_recogn_api": "",
         "recognapi_url": "",
         "recognapi_key": "",
+        "hearsight_url": "",
+        "hearsight_summarize_path": "/api/summarize",
         "stt_url": "",
         "stt_model": "tiny",
         "sense_url": "",
         "ttsapi_url": "",
         "ttsapi_voice_role": "",
-        "ttsapi_extra": "pyvideotrans",
+        "ttsapi_extra": "translateVideo",
         "ttsapi_language_boost": "auto",
         "ttsapi_emotion": "happy",
         "ai302tts_key": "",
@@ -572,7 +574,7 @@ def getset_params(obj=None):
         "gptsovits_url": "",
         "gptsovits_role": "",
         "gptsovits_isv2": True,
-        "gptsovits_extra": "pyvideotrans",
+        "gptsovits_extra": "translateVideo",
         "cosyvoice_url": "",
         "cosyvoice_role": "",
         "fishtts_url": "",

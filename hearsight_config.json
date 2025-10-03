@@ -1,0 +1,14 @@
+{
+  "llm": {
+    "api_key": "sk-r34HS5G2dnqbXZoKqD9jOTZqgXKzYg673lVObmMj4dJkRmcD",
+    "base_url": "https://api.gptgod.online/v1/",
+    "model": "gpt-4o-mini",
+    "temperature": 0.3,
+    "timeout": 120
+  },
+  "merge": {
+    "max_gap": 2.0,
+    "max_duration": 30.0,
+    "max_chars": 200
+  }
+}

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pyvideotrans - 视频翻译工具</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+</head>
+<body>
+  <header class="app-header">
+    <h1>🎬 pyvideotrans</h1>
+    <div class="spacer"></div>
+    <button class="btn primary" id="btn-start">开始处理</button>
+  </header>
+
+  <main class="container">
+    <!-- 任务列表 -->
+    <section class="card task-queue-card" id="task-queue-section">
+      <h2>📋 任务队列</h2>
+      <div id="task-queue-empty" class="task-empty">
+        <p>📭 暂无任务</p>
+        <p class="hint">选择视频文件后，任务将显示在这里</p>
+      </div>
+      <div id="task-queue-list" class="task-list" style="display: none;">
+        <!-- Tasks will be inserted here by JavaScript -->
+      </div>
+    </section>
+
+    <!-- 输入与输出 -->
+    <section class="card">
+      <h2>📁 输入与输出</h2>
+      <div class="row">
+        <button class="btn" id="btn-select-video">📹 选择视频</button>
+        <div class="hint" id="video-count">未选择视频</div>
+      </div>
+      <div class="row">
+        <button class="btn" id="btn-save-dir">💾 选择保存目录</button>
+        <div class="hint" id="save-dir">未选择</div>
+      </div>
+      <div class="row">
+        <label>🌐 代理</label>
+        <input id="proxy" type="text" placeholder="http://127.0.0.1:7890" />
+      </div>
+    </section>
+
+    <!-- 翻译设置 -->
+    <section class="card">
+      <h2>🌍 翻译设置</h2>
+      <div class="row">
+        <label>翻译渠道</label>
+        <div id="translate-type-container" style="flex:1"></div>
+      </div>
+      <div class="row">
+        <label>原语言</label>
+        <div id="source-language-container" style="flex:1"></div>
+        <label style="min-width:auto">→</label>
+        <label>目标语言</label>
+        <div id="target-language-container" style="flex:1"></div>
+      </div>
+      <div class="row">
+        <label style="width:auto">
+          <input type="checkbox" id="aisendsrt" />
+          SRT整篇发送
+        </label>
+      </div>
+    </section>
+
+    <!-- 语音识别 -->
+    <section class="card">
+      <h2>🎤 语音识别</h2>
+      <div class="row">
+        <label>识别类型</label>
+        <div id="recogn-type-container" style="flex:1"></div>
+      </div>
+      <div class="row">
+        <label>识别模型</label>
+        <div id="model-name-container" style="flex:1"></div>
+      </div>
+      <div class="row">
+        <label>切割方式</label>
+        <div id="split-type-container" style="flex:1"></div>
+        <label style="width:auto">
+          <input type="checkbox" id="remove-noise" />
+          降噪处理
+        </label>
+      </div>
+    </section>
+
+    <!-- 配音设置 -->
+    <section class="card">
+      <h2>🎵 配音设置</h2>
+      <div class="row">
+        <label>配音渠道</label>
+        <div id="tts-type-container" style="flex:1"></div>
+      </div>
+      <div class="row">
+        <label>配音角色</label>
+        <input id="voice-role" type="text" placeholder="如: zh-CN-XiaoxiaoNeural" />
+      </div>
+      <div class="row">
+        <label>语速调整</label>
+        <input id="voice-rate" type="number" min="-50" max="50" value="0" placeholder="0" />
+        <label>音量调整</label>
+        <input id="volume" type="number" min="-95" max="100" value="0" placeholder="0" />
+      </div>
+      <div class="row">
+        <label>音调调整</label>
+        <input id="pitch" type="number" min="-100" max="100" value="0" placeholder="0 Hz" />
+      </div>
+      <div class="row">
+        <label>字幕输出</label>
+        <div id="subtitle-type-container" style="flex:1"></div>
+      </div>
+      <div class="row">
+        <label style="width:auto">
+          <input type="checkbox" id="voice-autorate" />
+          配音加速
+        </label>
+        <label style="width:auto">
+          <input type="checkbox" id="video-autorate" />
+          视频慢速
+        </label>
+      </div>
+      <div class="row">
+        <label style="width:auto">
+          <input type="checkbox" id="enable-cuda" />
+          启用 CUDA
+        </label>
+        <label style="width:auto">
+          <input type="checkbox" id="enable-hearsight" />
+          智能摘要
+        </label>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <span id="version">加载中...</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

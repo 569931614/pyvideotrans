@@ -89,7 +89,7 @@ a:hover{color:#ff0}
 </ul>
 
 <p style="padding:8px;margin-top:15px;margin-bottom:20px">
-<a style="color:#ff0;" href="https://github.com/jianchang512/pyvideotrans/blob/main/about.md">开源不易，在免费的情况下保持维护和优化更难，若有可能请小额赞助，帮助项目持续更新。点击软件底部右下角“小额捐赠”字样可查看捐助方式和信息</a></p>
+<a style="color:#ff0;" href="about:blank">帮助与文档暂无</a></p>
 
 <hr style="color:#161E26;background-color:#161E26">
 <hr style="color:#161E26;background-color:#161E26">

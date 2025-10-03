@@ -23,7 +23,7 @@ if __name__ == '__main__':
     from videotrans import tts as tts_model, translator, recognition
 
     ###### 配置信息
-    #### api文档 https://pyvideotrans.com/api-cn
+    #### API
     config.exec_mode='api'
     ROOT_DIR = config.ROOT_DIR
     HOST = "127.0.0.1"
@@ -60,11 +60,11 @@ if __name__ == '__main__':
     # 第1个接口 /tts
     """
     根据字幕合成配音接口
-    
+
     请求数据类型: Content-Type:application
-    
+
     请求参数：
-    
+
     name:必须参数，字符串类型，需要配音的srt字幕的绝对路径(需同本软件在同一设备)，或者直接传递合法的srt字幕格式内容
     tts_type:必须参数，数字类型，配音渠道，0="Edge-TTS",1='CosyVoice',2="ChatTTS",3=302.AI,4="FishTTS",5="Azure-TTS",
         6="GPT-SoVITS",7="clone-voice",8="OpenAI TTS",9="Elevenlabs.io",10="Google TTS",11="自定义TTS API"
@@ -75,16 +75,16 @@ if __name__ == '__main__':
     pitch:可选参数，字符串类型，音调变化值(仅配音渠道为edge-tts生效)，格式为 调大音调`+数字Hz`,降低音量`-数字Hz`
     out_ext:可选参数，字符串类型，输出配音文件类型，mp3|wav|flac|aac,默认wav
     voice_autorate:可选参数，布尔类型，默认False，是否自动加快语速，以便与字幕对齐
-    
+
     返回数据：
     返回类型：json格式，
     成功时返回，可根据task_id通过 task_status 获取任务进度
     {"code":0,"msg":"ok","task_id":任务id}
-    
+
     失败时返回
     {"code":1,"msg":"错误信息"}
-    
-    
+
+
     请求示例
     ```
     def test_tts():
@@ -154,24 +154,24 @@ if __name__ == '__main__':
     # 第2个接口 /translate_srt
     """
     字幕翻译接口
-    
+
     请求参数:
     类型 Content-Type:application/json
-    
+
     请求数据:
     name:必须参数，字符串类型，需要翻译的srt字幕的绝对路径(需同本软件在同一设备)，或者直接传递合法的srt字幕格式内容
     translate_type：必须参数，整数类型，翻译渠道
     target_language:必须参数，字符串类型，要翻译到的目标语言代码。可选值 简体中文zh-cn，繁体zh-tw，英语en，法语fr，德语de，日语ja，韩语ko，俄语ru，西班牙语es，泰国语th，意大利语it，葡萄牙语pt，越南语vi，阿拉伯语ar，土耳其语tr，印地语hi，匈牙利语hu，乌克兰语uk，印尼语id，马来语ms，哈萨克语kk，捷克语cs，波兰语pl，荷兰语nl，瑞典语sv
     source_code:可选参数，字符串类型，原始字幕语言代码，可选同上
-    
+
     返回数据
     返回类型：json格式，
     成功时返回，可根据task_id通过 task_status 获取任务进度
     {"code":0,"msg":"ok","task_id":任务id}
-    
+
     失败时返回
     {"code":1,"msg":"错误信息"}
-    
+
     请求示例
     ```
     def test_translate_srt():
@@ -182,7 +182,7 @@ if __name__ == '__main__':
         })
         print(res.json())
     ```
-    
+
     """
     @app.route('/translate_srt', methods=['POST'])
     def translate_srt():
@@ -226,10 +226,10 @@ if __name__ == '__main__':
     # 第3个接口 /recogn
     """
     语音识别、音视频转字幕接口
-    
+
     请求参数:
     类型 Content-Type:application/json
-    
+
     请求数据:
     name:必须参数，字符串类型，需要翻译的音频或视频的绝对路径(需同本软件在同一设备)
     recogn_type:必须参数，数字类型，语音识别模式，0=faster-whisper本地模型识别，1=openai-whisper本地模型识别，2=Google识别api，3=zh_recogn中文识别，4=豆包模型识别，5=自定义识别API，6=OpenAI识别API
@@ -237,15 +237,15 @@ if __name__ == '__main__':
     detect_language:必须参数，字符串类型，音视频中人类说话语言。中文zh，英语en，法语fr，德语de，日语ja，韩语ko，俄语ru，西班牙语es，泰国语th，意大利语it，葡萄牙语pt，越南语vi，阿拉伯语ar，土耳其语tr，印地语hi，匈牙利语hu，乌克兰语uk，印尼语id，马来语ms，哈萨克语kk，捷克语cs，波兰语pl，荷兰语nl，瑞典语sv
     split_type：可选参数，字符串类型，默认all：整体识别，可选avg：均等分割
     is_cuda:可选参数，布尔类型，是否启用CUDA加速，默认False
-    
+
     返回数据
     返回类型：json格式，
     成功时返回，可根据task_id通过 task_status 获取任务进度
     {"code":0,"msg":"ok","task_id":任务id}
-    
+
     失败时返回
     {"code":1,"msg":"错误信息"}
-    
+
     示例
     def test_recogn():
         res=requests.post("http://127.0.0.1:9011/recogn",json={
@@ -257,7 +257,7 @@ if __name__ == '__main__':
         "detect_language":"zh",
         })
         print(res.json())
-    
+
     """
     @app.route('/recogn', methods=['POST'])
     def recogn():
@@ -301,11 +301,11 @@ if __name__ == '__main__':
     # 第4个接口
     """
     视频完整翻译接口
-    
-    
+
+
     请求参数:
     类型 Content-Type:application/json
-    
+
     请求数据:
     name:必须参数，字符串类型，需要翻译的音频或视频的绝对路径(需同本软件在同一设备)
     recogn_type:必须参数，数字类型，语音识别模式，0=faster-whisper本地模型识别，1=openai-whisper本地模型识别，2=Google识别api，3=zh_recogn中文识别，4=豆包模型识别，5=自定义识别API，6=OpenAI识别API
@@ -326,28 +326,28 @@ if __name__ == '__main__':
     subtitle_type:可选参数，整数类型，默认0，字幕嵌入类型，0=不嵌入字幕，1=嵌入硬字幕，2=嵌入软字幕，3=嵌入双硬字幕，4=嵌入双软字幕
     append_video：可选参数，布尔类型，默认False，如果配音后音频时长大于视频，是否延长视频末尾
     only_video:可选参数，布尔类型，默认False，是否只生成视频文件，不生成字幕音频等
-    
+
     返回数据
     返回类型：json格式，
     成功时返回，可根据task_id通过 task_status 获取任务进度
     {"code":0,"msg":"ok","task_id":任务id}
-    
+
     失败时返回
     {"code":1,"msg":"错误信息"}
-    
+
     示例
     def test_trans_video():
         res=requests.post("http://127.0.0.1:9011/trans_video",json={
         "name":"C:/Users/c1/Videos/10ass.mp4",
-    
+
         "recogn_type":0,
         "split_type":"all",
         "model_name":"tiny",
-    
+
         "translate_type":0,
         "source_language":"zh-cn",
         "target_language":"en",
-    
+
         "tts_type":0,
         "voice_role":"zh-CN-YunjianNeural",
         "voice_rate":"+0%",
@@ -355,17 +355,17 @@ if __name__ == '__main__':
         "pitch":"+0Hz",
         "voice_autorate":True,
         "video_autorate":True,
-    
+
         "is_separate":False,
         "back_audio":"",
-        
+
         "subtitle_type":1,
         "append_video":False,
-    
+
         "is_cuda":False,
         })
         print(res.json())
-    
+
     """
     @app.route('/trans_video', methods=['POST'])
     def trans_video():
@@ -444,7 +444,7 @@ if __name__ == '__main__':
         cfg.update(obj)
 
         config.current_status = 'ing'
-        trk = TransCreate(cfg)
+        trk = TransCreate(cfg=cfg)
         config.prepare_queue.append(trk)
         tools.set_process(text=f"Currently in queue No.{len(config.prepare_queue)}",uuid=obj['uuid'])
         #
@@ -454,32 +454,32 @@ if __name__ == '__main__':
     # 获取任务进度
     """
     根据任务id，获取当前任务的状态
-    
+
     请求数据类型：优先GET中获取，不存在则从POST中获取，都不存在则从 json数据中获取
-    
-    请求参数: 
+
+    请求参数:
     task_id:必须，字符串类型
-    
+
     返回:json格式数据
     code:-1=进行中，0=成功结束，>0=出错了
     msg:code为-1时为进度信息，code>0时为出错信息，成功时为ok
     data:仅当code==0成功时存在，是一个dict对象
         absolute_path是生成的文件列表list，每项均是一个文件的绝对路径
         url 是生成的文件列表list，每项均是一个可访问的url
-    
-    
+
+
     失败：{"code":1,"msg":"不存在该任务"}
-    进行中：{"code":-1,"msg":"正在合成声音"} 
+    进行中：{"code":-1,"msg":"正在合成声音"}
     成功: {"code":0,"msg":"ok","data":{"absolute_path":["/data/1.srt","/data/1.mp4"],"url":["http://127.0.0.1:9011/task_id/1.srt"]}}
-    
-    
+
+
     示例
     def test_task_status():
         res=requests.post("http://127.0.0.1:9011/task_status",json={
             "task_id":"06c238d250f0b51248563c405f1d7294"
         })
         print(res.json())
-    
+
     {
       "code": 0,
       "data": {
@@ -504,7 +504,7 @@ if __name__ == '__main__':
       },
       "msg": "ok"
     }
-    
+
     """
     @app.route('/task_status', methods=['POST', 'GET'])
     def task_status():
@@ -521,9 +521,277 @@ if __name__ == '__main__':
         if not task_id:
             return jsonify({"code": 1, "msg": "The parem  task_id is not set"})
         return _get_task_data(task_id)
-        
 
-    
+
+
+        # ===================== HearSight Q&A/Search (no-upload) =====================
+        # Simple retrieval over generated SRTs under TARGET_DIR, to support search/ask
+        def _iter_srt_files(video_id: str = None, lang: str = None):
+            try:
+                for p in Path(TARGET_DIR).rglob('*.srt'):
+                    if video_id and p.parent.name != str(video_id):
+                        continue
+                    if lang:
+                        fname = p.name.lower()
+                        if (f'.{lang.lower()}.srt' not in fname) and (f'-{lang.lower()}.srt' not in fname) and (f'_{lang.lower()}.srt' not in fname):
+                            continue
+                    yield p
+            except Exception:
+                return
+
+        def _read_srt_segments(srt_path: Path):
+            try:
+                return tools.get_subtitle_from_srt(srt_path.as_posix(), is_file=True)
+            except Exception:
+                return []
+
+        def _find_video_in_dir(d: Path):
+            try:
+                # heuristic: prefer mp4
+                for ext in ['.mp4', '.mkv', '.mov', '.webm']:
+                    for f in d.glob(f'*{ext}'):
+                        return f
+            except Exception:
+                pass
+            return None
+
+        def _tokenize(text: str):
+            import re as _re
+            return [w for w in _re.split(r'\s+', (text or '').lower().strip()) if w]
+
+        def _highlight(text: str, tokens):
+            t = text or ''
+            try:
+                import re as _re
+                def repl(m):
+                    return f"<em>{m.group(0)}</em>"
+                for tok in sorted(set(tokens or []), key=lambda x: -len(x)):
+                    if not tok:
+                        continue
+                    t = _re.sub(_re.escape(tok), repl, t, flags=_re.IGNORECASE)
+            except Exception:
+                pass
+            return t
+
+        def _search_segments(query: str, limit: int = 20, offset: int = 0, video_id: str = None, lang: str = None, mode: str = 'auto', context_span: int = 0):
+            """
+            mode: 'auto'|'any'|'all'|'phrase'
+            context_span: include N previous and N next segments around a hit
+            """
+            q = (query or '').strip()
+            if not q:
+                return []
+            tokens = _tokenize(q)
+            phrase = q.lower()
+            # gather corpus
+            corpus = []  # list of dict: {srt_path, segments, uuid, video_url, subtitle_url, subtitle_lang}
+            total_segments = 0
+            for srt_path in _iter_srt_files(video_id=video_id, lang=lang):
+                segs = _read_srt_segments(srt_path)
+                if not segs:
+                    continue
+                uuid = srt_path.parent.name
+                video_file = _find_video_in_dir(srt_path.parent)
+                base = f"{request.scheme}://{request.host}/{API_RESOURCE}/{uuid}"
+                video_url = f"{base}/{video_file.name}" if video_file else None
+                subtitle_url = f"{base}/{srt_path.name}"
+                subtitle_lang = ''
+                fname = srt_path.name
+                # naive lang extraction
+                for sep in ['.', '-', '_']:
+                    parts = fname.split(sep)
+                    if len(parts) >= 2 and parts[-1].lower().endswith('srt'):
+                        subtitle_lang = parts[-2].lower()
+                        break
+                corpus.append({
+                    'srt_path': srt_path,
+                    'segments': segs,
+                    'uuid': uuid,
+                    'video_url': video_url,
+                    'subtitle_url': subtitle_url,
+                    'subtitle_lang': subtitle_lang,
+                })
+                total_segments += len(segs)
+            if total_segments == 0:
+                return []
+            # build df for idf over tokens
+            from collections import defaultdict
+            df = defaultdict(int)
+            for c in corpus:
+                for seg in c['segments']:
+                    text = str(seg.get('text', '')).lower()
+                    seen = set()
+                    for tok in tokens:
+                        if tok and tok in text:
+                            seen.add(tok)
+                    for tok in seen:
+                        df[tok] += 1
+            import math
+            idf = {tok: math.log((total_segments + 1) / (df.get(tok, 0) + 1)) + 1.0 for tok in tokens}
+            # scoring
+            items = []
+            for c in corpus:
+                segs = c['segments']
+                for idx, seg in enumerate(segs):
+                    text = str(seg.get('text', '')).strip()
+                    tl = text.lower()
+                    if mode == 'phrase' and phrase not in tl:
+                        continue
+                    if mode == 'all' and any(tok not in tl for tok in tokens if tok):
+                        continue
+                    # tf-idf + phrase boost
+                    score = 0.0
+                    for tok in tokens:
+                        if not tok:
+                            continue
+                        tf = tl.count(tok)
+                        if tf:
+                            score += tf * idf.get(tok, 1.0)
+                    if phrase and phrase in tl:
+                        score += 10.0 + tl.count(phrase)
+                    if score <= 0:
+                        # 'any' or 'auto' with no token hits -> skip
+                        continue
+                    st_ms = int(seg.get('start_time', 0))
+                    et_ms = int(seg.get('end_time', 0))
+                    node = {
+                        'index': int(seg.get('line', 0) or 0),
+                        'text': text,
+                        'text_highlight': _highlight(text, tokens),
+                        'start_time': round(st_ms / 1000.0, 3),
+                        'end_time': round(et_ms / 1000.0, 3),
+                    }
+                    item = {
+                        'video_id': c['uuid'],
+                        'video_title': Path(c['srt_path']).stem,
+                        'video_url': c['video_url'],
+                        'video_time_url': (f"{c['video_url']}?t={int(node['start_time'])}" if c['video_url'] else None),
+                        'subtitle_url': c['subtitle_url'],
+                        'subtitle_lang': c['subtitle_lang'],
+                        'node': node,
+                        '_score': score,
+                    }
+                    # context window
+                    if context_span and isinstance(context_span, int) and context_span > 0:
+                        ctx = []
+                        for j in range(max(0, idx - context_span), min(len(segs), idx + context_span + 1)):
+                            if j == idx:
+                                continue
+                            s2 = segs[j]
+                            ctx.append({
+                                'index': int(s2.get('line', 0) or 0),
+                                'text': str(s2.get('text', '')).strip(),
+                                'start_time': round(int(s2.get('start_time', 0)) / 1000.0, 3),
+                                'end_time': round(int(s2.get('end_time', 0)) / 1000.0, 3),
+                            })
+                        if ctx:
+                            item['context'] = ctx
+                    items.append(item)
+            items.sort(key=lambda x: x.get('_score', 0.0), reverse=True)
+            start = max(0, int(offset or 0))
+            end = start + max(1, int(limit or 20))
+            sliced = items[start:end]
+            for it in sliced:
+                it.pop('_score', None)
+            return sliced
+
+        @app.route('/search_nodes', methods=['GET', 'POST'])
+        def search_nodes():
+            # support: query, limit, offset, video_id, lang, mode ('auto'|'any'|'all'|'phrase'), context_span
+            data = request.json or {}
+            q = request.args.get('query') if request.method == 'GET' else data.get('query')
+            if not q or not str(q).strip():
+                return jsonify({"code": 1, "msg": "query is required"}), 400
+            try:
+                limit = int(request.args.get('limit') or data.get('limit') or 20)
+            except Exception:
+                limit = 20
+            try:
+                offset = int(request.args.get('offset') or data.get('offset') or 0)
+            except Exception:
+                offset = 0
+            video_id = request.args.get('video_id') or data.get('video_id')
+            lang = request.args.get('lang') or data.get('lang')
+            mode = (request.args.get('mode') or data.get('mode') or 'auto').lower()
+            try:
+                context_span = int(request.args.get('context_span') or data.get('context_span') or 0)
+            except Exception:
+                context_span = 0
+            items = _search_segments(str(q).strip(), limit=limit, offset=offset, video_id=video_id, lang=lang, mode=mode, context_span=context_span)
+            return jsonify({"code": 0, "msg": "ok", "items": items})
+
+        def _llm_chat(messages, api=None, key=None, model=None, **kwargs):
+            import requests as _req
+            base_url = (api or config.settings.get('chatgpt_api') or '').strip()
+            api_key = (key or config.settings.get('chatgpt_key') or '').strip()
+            model_name = (model or config.settings.get('chatgpt_model') or '').strip() or 'gpt-4o-mini'
+            if not base_url or not api_key:
+                raise RuntimeError('LLM api or key not configured')
+            url = base_url.rstrip('/') + '/chat/completions'
+            headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+            payload = {"model": model_name, "messages": messages}
+            payload.update(kwargs or {})
+            r = _req.post(url, json=payload, headers=headers, timeout=60)
+            if not r.ok:
+                raise RuntimeError(f"LLM error {r.status_code}: {r.text}")
+            data = r.json()
+            return (data.get('choices') or [{}])[0].get('message', {}).get('content', '')
+
+        @app.route('/ask', methods=['POST'])
+        def ask():
+            data = request.json or {}
+            question = str(data.get('question', '')).strip()
+            if not question:
+                return jsonify({"code": 1, "msg": "question is required"}), 400
+            top_k = int(data.get('top_k', 10))
+            video_id = data.get('video_id')
+            lang = data.get('lang')
+            mode = (data.get('mode') or 'auto').lower()
+            context_span = int(data.get('context_span', 0) or 0)
+            # retrieval
+            ctx_items = _search_segments(question, limit=top_k, video_id=video_id, lang=lang, mode=mode, context_span=context_span)
+            # Build textual context for LLM
+            context_lines = []
+            for i, it in enumerate(ctx_items, 1):
+                n = it.get('node', {})
+                context_lines.append(f"[{i}] {it.get('video_title')} @ {n.get('start_time')}-{n.get('end_time')}s: {n.get('text')}")
+            context_text = "\n".join(context_lines) if context_lines else "(no context found)"
+            system = (
+                "You are a helpful assistant for video knowledge Q&A. Answer concisely using the provided segments. "
+                "Cite references as [index] when relevant. If unsure, say you don't know."
+            )
+            user_msg = (
+                f"Question: {question}\n\nRelevant segments:\n{context_text}\n\n"
+                "Answer in the user's language."
+            )
+            try:
+                answer = _llm_chat([
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user_msg},
+                ], api=data.get('base_url'), key=data.get('api_key'), model=data.get('model'), temperature=0.2)
+                # citations for UI
+                citations = []
+                for i, it in enumerate(ctx_items, 1):
+                    n = it.get('node', {})
+                    citations.append({
+                        'ref': i,
+                        'video_id': it.get('video_id'),
+                        'video_title': it.get('video_title'),
+                        'video_url': it.get('video_url'),
+                        'video_time_url': it.get('video_time_url'),
+                        'start_time': n.get('start_time'),
+                        'end_time': n.get('end_time'),
+                        'text': n.get('text'),
+                    })
+                return jsonify({"code": 0, "msg": "ok", "answer": answer, "contexts": ctx_items, "citations": citations})
+            except Exception as e:
+                return jsonify({"code": 2, "msg": f"LLM error: {e}", "contexts": ctx_items}), 500
+        # =================== END HearSight Q&A/Search ===================
+
+
+
+
+
     # 获取多个任务 前台 content-type:application/json, 数据 {task_id_list:[id1,id2,....]}
     @app.route('/task_status_list', methods=['POST', 'GET'])
     def task_status_list():
@@ -531,12 +799,12 @@ if __name__ == '__main__':
         task_ids= request.json.get('task_id_list',[])
         if not task_ids or len(task_ids)<1:
             return jsonify({"code": 1, "msg": "缺少任务id"})
-        
+
         return_data={}
         for task_id in task_ids:
             return_data[task_id]=_get_task_data(task_id)
         return jsonify({"code": 0, "msg": "ok","data":return_data})
-    
+
     def _get_task_data(task_id):
         file = PROCESS_INFO + f'/{task_id}.json'
         if not Path(file).is_file():
@@ -576,7 +844,7 @@ if __name__ == '__main__':
             order_num+=1
             if it.uuid == task_id:
                 return f'当前处于预处理队列第{order_num}位' if config.defaulelang=='zh' else f"No.{order_num} on perpare queue"
-        
+
         order_num=0
         for it in config.regcon_queue:
             order_num+=1
@@ -603,7 +871,7 @@ if __name__ == '__main__':
             if it.uuid == task_id:
                 return f'当前处于输出整理队列第{order_num}位' if config.defaulelang=='zh' else f"No.{order_num} on perpare queue"
         return '正在排队等待执行中，请稍后' if config.defaulelang=='zh' else f"Waiting in queue"
-    
+
     def _get_files_in_directory(dirname):
         """
         使用 pathlib 库获取指定目录下的所有文件名，并返回一个文件名列表。
@@ -660,7 +928,7 @@ if __name__ == '__main__':
 
     multiprocessing.freeze_support()  # Windows 上需要这个来避免子进程的递归执行问题
     print(f'Starting... API URL is   http://{HOST}:{PORT}')
-    print(f'Document at https://pyvideotrans.com/api-cn')
+    print('Document: local')
     start_thread()
     threading.Thread(target=_listen_queue).start()
     try:

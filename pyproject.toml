@@ -1,8 +1,8 @@
 [project]
-name = "pyvideotrans"
+name = "translateVideo"
 version = "3.78"
 description = "Open Source Video Translation software"
-authors = [{ name = "jianchng512@gmail.com" }]
+authors = []
 license-files = ["LICEN[CS]E*"]
 readme = "README.md"
 requires-python = ">=3.10,<=3.12"
@@ -66,8 +66,8 @@ dependencies = [
 
 
 [project.urls]
-Homepage = "https://pyvideotrans.com"
-Repository = "https://github.com/jianchng512/pyvideotrans.git"
+Homepage = ""
+Repository = ""
 
 
 

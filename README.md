@@ -1,6 +1,6 @@
-简体中文 | [English](docs/EN/README_EN.md)  | [捐助](docs/about.md) | 微信公众号：`pyvideotrans`
+translateVideo
 
-# 视频翻译配音工具
+# translateVideo
 
 这是一个视频翻译配音工具，可将一种语言的视频翻译为指定语言的视频，自动生成和添加该语言的字幕和配音。并支持API调用(v3.0以下版本，以上久未更新)
 
@@ -323,10 +323,5 @@ pip install ctranslate2==3.24.0
 
 
 
-如果觉得该项目对你有价值，并希望该项目能一直稳定持续维护，欢迎捐助
 
-<img width="200" src="https://github.com/user-attachments/assets/5e8688ef-47c3-4a3c-a016-e60f73ccc4dc">
-
-
-<img width="200" src="https://github.com/jianchang512/pyvideotrans/assets/3378335/fe1aa29d-c26d-46d3-b7f3-e9c030ef32c7">
 

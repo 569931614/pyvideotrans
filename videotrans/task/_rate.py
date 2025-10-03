@@ -188,6 +188,8 @@ class SpeedRate:
             silence_duration = it['start_time_source'] - last_end_time
             if silence_duration > self.MIN_CLIP_DURATION_MS:
                 silence_clip_path = Path(self.audio_clips_folder, f"{i:05d}_pre_silence.wav").as_posix()
+                # 确保目录存在
+                Path(silence_clip_path).parent.mkdir(parents=True, exist_ok=True)
                 # [修正] 标准化静音参数
                 silent_segment = AudioSegment.silent(duration=silence_duration)
                 self._standardize_audio_segment(silent_segment).export(silence_clip_path, format="wav")
@@ -222,6 +224,8 @@ class SpeedRate:
 
             # 导出当前配音片段
             dub_clip_path = Path(self.audio_clips_folder, f"{i:05d}_dub.wav").as_posix()
+            # 确保目录存在
+            Path(dub_clip_path).parent.mkdir(parents=True, exist_ok=True)
             segment.export(dub_clip_path, format="wav")
             audio_concat_list.append(dub_clip_path)
             total_audio_duration += dubb_duration
@@ -236,6 +240,8 @@ class SpeedRate:
                     remaining_silence = available_space - dubb_duration
                     if remaining_silence > self.MIN_CLIP_DURATION_MS:
                         post_silence_path = Path(self.audio_clips_folder, f"{i:05d}_post_silence.wav").as_posix()
+                        # 确保目录存在
+                        Path(post_silence_path).parent.mkdir(parents=True, exist_ok=True)
                         # [修正] 标准化静音参数
                         silent_segment = AudioSegment.silent(duration=remaining_silence)
                         self._standardize_audio_segment(silent_segment).export(post_silence_path, format="wav")
@@ -689,6 +695,10 @@ class SpeedRate:
 
             if segment:
                 # [核心修正] 导出前统一所有片段的参数
+                # 确保目录存在
+                clip_dir = Path(clip_path).parent
+                clip_dir.mkdir(parents=True, exist_ok=True)
+
                 self._standardize_audio_segment(segment).export(clip_path, format="wav")
                 audio_concat_list.append(clip_path)
 
@@ -717,6 +727,8 @@ class SpeedRate:
 
             if silence_needed > self.MIN_CLIP_DURATION_MS:
                 silence_path = Path(self.audio_clips_folder, f"t_clip_{i:05d}_silence.wav").as_posix()
+                # 确保目录存在
+                Path(silence_path).parent.mkdir(parents=True, exist_ok=True)
                 # [修正] 标准化
                 silent_segment = AudioSegment.silent(duration=silence_needed)
                 self._standardize_audio_segment(silent_segment).export(silence_path, format="wav")
@@ -743,6 +755,8 @@ class SpeedRate:
                 config.logger.warning(f"字幕[{it['line']}] 配音文件不存在，使用等长静音替代。")
 
             clip_path = Path(self.audio_clips_folder, f"t_clip_{i:05d}_sub.wav").as_posix()
+            # 确保目录存在
+            Path(clip_path).parent.mkdir(parents=True, exist_ok=True)
             # [修正] 标准化
             self._standardize_audio_segment(segment).export(clip_path, format="wav")
             audio_concat_list.append(clip_path)
@@ -757,6 +771,8 @@ class SpeedRate:
         if final_gap > self.MIN_CLIP_DURATION_MS:
             # final_gap_path = Path(self.audio_clips_folder, "t_clip_zzzz_final_gap.wav").as_posix()
             final_gap_path = Path(self.audio_clips_folder, "t_clip_zzzz_final_gap.wav").as_posix()
+            # 确保目录存在
+            Path(final_gap_path).parent.mkdir(parents=True, exist_ok=True)
             # [修正] 标准化
             silent_segment = AudioSegment.silent(duration=final_gap)
             self._standardize_audio_segment(silent_segment).export(final_gap_path, format="wav")

@@ -6,14 +6,15 @@ import time
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QTimer, QSettings, QEvent
-from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QMainWindow, QPushButton, QToolBar, QSizePolicy
+from PySide6.QtGui import QIcon, QAction
+from PySide6.QtWidgets import QMainWindow, QPushButton, QToolBar, QSizePolicy, QApplication, QStackedWidget
 
 from videotrans import VERSION, recognition, tts
 from videotrans.configure import config
 from videotrans.mainwin._actions import WinAction
 from videotrans.ui.en import Ui_MainWindow
 from videotrans.util import tools
+from videotrans.ui.html_main import HtmlMainView
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -41,12 +42,25 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._replace_placeholders()
         self.initUI()
 
+        # Setup stacked central widget to preserve original Qt UI when switching
+        self._original_central = self.centralwidget
+        try:
+            self._central_stack = QStackedWidget(self)
+            # Detach before reparenting to avoid deletion when replacing central widget
+            self._original_central.setParent(None)
+            self._central_stack.addWidget(self._original_central)
+            self.setCentralWidget(self._central_stack)
+        except Exception:
+            self._central_stack = None
+        self.html_view = None
+
         self._retranslateUi_from_logic()
         self.show()
         QTimer.singleShot(50, self._set_cache_set)
         QTimer.singleShot(100, self._start_subform)
         QTimer.singleShot(400, self._bindsignal)
         QTimer.singleShot(800, self.is_writable)
+        QTimer.singleShot(900, self._init_hearsight)
 
     def _replace_placeholders(self):
         """
@@ -110,10 +124,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.video_autorate.setToolTip('视频自动慢速处理' if config.defaulelang == 'zh' else 'Video Auto Slow')
 
         self.enable_cuda.setText(config.uilanglist.get("Enable CUDA?"))
+        self.enable_hearsight.setText('智能摘要' if config.defaulelang == 'zh' else 'Smart Summary')
+        self.enable_hearsight.setToolTip(
+            '完成翻译后自动生成智能摘要并存储到向量库' if config.defaulelang == 'zh' else 'Automatically generate smart summary after translation and store in vector database')
         self.is_separate.setText('保留原始背景音' if config.defaulelang == 'zh' else 'Retain original background sound')
         self.is_separate.setToolTip(
             '若选中则分离人声和背景声，最终输出视频再将背景声嵌入' if config.defaulelang == 'zh' else 'If selected, separate human voice and background sound, \nand finally output video will embed background sound')
         self.startbtn.setText(config.uilanglist.get("Start"))
+        # Emphasize Start as primary action and increase height for grandeur
+        try:
+            self.startbtn.setProperty('primary', 'true')
+            self.startbtn.setMinimumHeight(36)
+        except Exception:
+            pass
+
         self.addbackbtn.setText('添加额外背景音频' if config.defaulelang == 'zh' else 'Add background audio')
         self.addbackbtn.setToolTip(
             '为输出视频额外添加一个音频作为背景声音' if config.defaulelang == 'zh' else 'Add background audio for output video')
@@ -178,7 +202,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.action_gtrans.setText(
             '下载硬字幕提取软件' if config.defaulelang == 'zh' else 'Download Hard Subtitle Extraction Software')
         self.action_cuda.setText('CUDA & cuDNN')
-        self.action_online.setText('免责声明' if config.defaulelang == 'zh' else 'Disclaimer')
+
+        # remove Disclaimer from menu
+        self.action_online.setVisible(False)
         self.actiontencent_key.setText("腾讯翻译设置" if config.defaulelang == 'zh' else "Tencent Key")
         self.action_about.setText(config.uilanglist.get("Donating developers"))
 
@@ -246,25 +272,111 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.actionsrtmultirole.setToolTip(
             '字幕多角色配音：为每条字幕分配一个声音' if config.defaulelang == 'zh' else 'Subtitle multi-role dubbing: assign a voice to each subtitle')
 
+    def _load_theme(self, name: str):
+        """Apply theme by name: 'dark' or 'light'"""
+        app = QApplication.instance()
+        if not app:
+            return
+        if name == 'light':
+            css_path = f"{config.ROOT_DIR}/videotrans/styles/style_light.qss"
+        else:
+            css_path = f"{config.ROOT_DIR}/videotrans/styles/style.qss"
+        try:
+            with open(css_path, 'r', encoding='utf-8') as f:
+                app.setStyleSheet(f.read())
+        except Exception:
+            pass
+
+    def _apply_saved_theme(self):
+        sets = QSettings("pyvideotrans", "settings")
+        theme = sets.value("theme", "dark")
+        self._load_theme(theme)
+        if hasattr(self, 'action_theme_light') and self.action_theme_light:
+            self.action_theme_light.setChecked(theme == 'light')
+
+    def _toggle_theme(self, checked: bool):
+        theme = 'light' if checked else 'dark'
+        self._load_theme(theme)
+        sets = QSettings("pyvideotrans", "settings")
+        sets.setValue("theme", theme)
+
+    def _setup_theme_toggle(self):
+        # Create a checkable action to toggle light theme
+        label = '\u6d45\u8272\u4e3b\u9898' if config.defaulelang == 'zh' else 'Light Theme'
+        self.action_theme_light = QAction(label, self)
+        self.action_theme_light.setCheckable(True)
+        # Place it into the general Tools/ADVSet menu
+        if hasattr(self, 'menu') and self.menu:
+            self.menu.addSeparator()
+            self.menu.addAction(self.action_theme_light)
+        self.action_theme_light.toggled.connect(self._toggle_theme)
+
     def initUI(self):
 
         from videotrans.translator import TRANSLASTE_NAME_LIST
 
-        self.statusLabel = QPushButton(config.transobj["Open Documents"])
-        self.statusBar.addWidget(self.statusLabel)
-        self.rightbottom = QPushButton(config.transobj['juanzhu'])
-        self.container = QToolBar()
-        self.container.addWidget(self.rightbottom)
-        self.statusBar.addPermanentWidget(self.container)
+        # Help/Docs button removed per request
+        self.statusLabel = None
+        _don_text = (config.transobj.get('juanzhu','') or '').strip()
+        if _don_text:
+            self.rightbottom = QPushButton(_don_text)
+            self.container = QToolBar()
+            self.container.addWidget(self.rightbottom)
+            self.statusBar.addPermanentWidget(self.container)
         self.toolBar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.source_language.addItems(self.languagename)
         self.target_language.addItems(["-"] + self.languagename[:-1])
         self.translate_type.addItems(TRANSLASTE_NAME_LIST)
 
-        self.rawtitle = f"{config.transobj['softname']} {VERSION}  {'使用文档' if config.defaulelang == 'zh' else 'Documents'}  pyvideotrans.com "
+        self.rawtitle = f"{config.transobj['softname']} {VERSION}"
         self.setWindowTitle(self.rawtitle)
         self.win_action = WinAction(self)
         self.win_action.tts_type_change(config.params['tts_type'])
+
+        # Hide Help/About menus and related actions
+        for act in [
+            getattr(self, 'action_about', None),
+            getattr(self, 'action_website', None),
+            getattr(self, 'action_discord', None),
+            getattr(self, 'action_blog', None),
+            getattr(self, 'action_issue', None),
+            getattr(self, 'action_ffmpeg', None),
+            getattr(self, 'action_git', None),
+            getattr(self, 'action_gtrans', None),
+            getattr(self, 'action_cuda', None),
+            getattr(self, 'action_online', None),
+        ]:
+            if act:
+                act.setVisible(False)
+        # Also hide the Help menu if present
+
+        # Keep only '自定义视频翻译' feature: hide all menus and non-primary toolbar actions
+        for men in ['menu_Key', 'menu_TTS', 'menu_RECOGN', 'menu_H', 'menu']:
+            if hasattr(self, men):
+                try:
+                    getattr(self, men).menuAction().setVisible(False)
+                except Exception:
+                    pass
+        for act_name in [
+            'action_tiquzimu','action_yuyinshibie','action_fanyi','action_yuyinhecheng',
+            'actionsrtmultirole','actionsubtitlescover','action_yingyinhebing',
+            'actionwatermark','actionvideoandaudio','actionvideoandsrt','actionformatcover',
+            'action_hebingsrt','actionsepar','action_clearcache','action_yinshipinfenli','action_hun'
+        ]:
+            act = getattr(self, act_name, None)
+            if act: act.setVisible(False)
+        # ensure primary action is selected
+        if hasattr(self, 'action_biaozhun'):
+            self.action_biaozhun.setVisible(True)
+            self.action_biaozhun.setChecked(True)
+
+        if hasattr(self, 'menu_H'):
+            self.menu_H.menuAction().setVisible(False)
+
+
+        # Theme toggle in Tools menu and apply saved theme
+        self._setup_theme_toggle()
+        self._apply_saved_theme()
 
         try:
             config.params['translate_type'] = int(config.params['translate_type'])
@@ -326,6 +438,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     config.params['voice_role'] in self.current_rolelist:
                 self.voice_role.setCurrentText(config.params['voice_role'])
                 self.win_action.show_listen_btn(config.params['voice_role'])
+
+        # Add HTML UI toggle on toolbar
+        try:
+            self.action_html_ui = QAction('HTML UI', self)
+            self.action_html_ui.setCheckable(True)
+            if hasattr(self, 'toolBar') and self.toolBar:
+                self.toolBar.addSeparator()
+                self.toolBar.addAction(self.action_html_ui)
+            self.action_html_ui.toggled.connect(self._toggle_html_ui)
+            # Default to HTML UI on startup
+            QTimer.singleShot(10, lambda: self.action_html_ui.setChecked(True))
+        except Exception:
+            pass
 
         try:
             config.params['recogn_type'] = int(config.params['recogn_type'])
@@ -430,9 +555,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.video_autorate.setChecked(bool(config.params['video_autorate']))
         self.clear_cache.setChecked(bool(config.params.get('clear_cache')))
         self.enable_cuda.setChecked(True if config.params['cuda'] else False)
+        self.enable_hearsight.setChecked(bool(config.params.get('enable_hearsight', False)))
         self.only_video.setChecked(True if config.params['only_video'] else False)
         self.is_separate.setChecked(True if config.params['is_separate'] else False)
-        
+
         local_rephrase=config.settings.get('rephrase_local',False)
         self.rephrase_local.setChecked(local_rephrase)
         self.rephrase.setChecked(config.settings.get('rephrase',False) if not local_rephrase else False)
@@ -448,8 +574,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.voice_role.currentTextChanged.connect(self.win_action.show_listen_btn)
         self.target_language.currentTextChanged.connect(self.win_action.set_voice_role)
         self.source_language.currentTextChanged.connect(self.win_action.source_language_change)
-        
-        
+
+
         self.rephrase.toggled.connect(lambda  checked:self.win_action.rephrase_fun(checked,'llm'))
         self.rephrase_local.toggled.connect(lambda checked:self.win_action.rephrase_fun(checked,'local'))
 
@@ -469,11 +595,44 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.label_9.clicked.connect(self.win_action.click_translate_type)
         self.tts_text.clicked.connect(self.win_action.click_tts_type)
 
-        self.label.clicked.connect(lambda: tools.open_url(url='https://pvt9.com/proxy'))
-        self.hfaster_help.clicked.connect(lambda: tools.open_url(url='https://pvt9.com/vad'))
-        self.split_label.clicked.connect(lambda: tools.open_url(url='https://pvt9.com/splitmode'))
-        self.align_btn.clicked.connect(lambda: tools.open_url(url='https://pvt9.com/align'))
+        self.label.clicked.connect(lambda: tools.open_url(url='about:blank'))
+        self.hfaster_help.clicked.connect(lambda: tools.open_url(url='about:blank'))
+        self.split_label.clicked.connect(lambda: tools.open_url(url='about:blank'))
+        self.align_btn.clicked.connect(lambda: tools.open_url(url='about:blank'))
         self.glossary.clicked.connect(lambda: tools.show_glossary_editor(self))
+
+    def _toggle_html_ui(self, enabled: bool):
+        """Switch between legacy Qt UI and new HTML UI."""
+        try:
+            if enabled:
+                if self.html_view is None:
+                    self.html_view = HtmlMainView(self)
+                if self._central_stack is not None:
+                    # add and switch
+                    if self._central_stack.indexOf(self.html_view) == -1:
+                        self._central_stack.addWidget(self.html_view)
+                    self._central_stack.setCurrentWidget(self.html_view)
+                else:
+                    self.setCentralWidget(self.html_view)
+            else:
+                if self._central_stack is not None:
+                    self._central_stack.setCurrentWidget(self._original_central)
+                else:
+                    self.setCentralWidget(self._original_central)
+        except Exception:
+            # fallback to original UI
+            try:
+                if self._central_stack is not None:
+                    self._central_stack.setCurrentWidget(self._original_central)
+                else:
+                    self.setCentralWidget(self._original_central)
+            except Exception:
+                pass
+            if hasattr(self, 'action_html_ui'):
+                try:
+                    self.action_html_ui.setChecked(False)
+                except Exception:
+                    pass
 
     def _start_subform(self):
 
@@ -485,8 +644,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.btn_get_video.setCursor(Qt.PointingHandCursor)
         self.btn_save_dir.setCursor(Qt.PointingHandCursor)
         self.listen_btn.setCursor(Qt.PointingHandCursor)
-        self.statusLabel.setCursor(Qt.PointingHandCursor)
-        self.rightbottom.setCursor(Qt.PointingHandCursor)
+        if self.statusLabel:
+            self.statusLabel.setCursor(Qt.PointingHandCursor)
+        if hasattr(self, 'rightbottom'):
+            self.rightbottom.setCursor(Qt.PointingHandCursor)
 
         from videotrans import winform
         self.action_biaozhun.triggered.connect(self.win_action.set_biaozhun)
@@ -555,15 +716,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.action_gtrans.triggered.connect(lambda: self.win_action.open_url('gtrans'))
         self.action_cuda.triggered.connect(lambda: self.win_action.open_url('cuda'))
-        self.action_online.triggered.connect(lambda: self.win_action.open_url('online'))
+        # disclaimer action removed
+        self.action_online.triggered.connect(lambda: None)
         self.action_website.triggered.connect(lambda: self.win_action.open_url('website'))
         self.action_blog.triggered.connect(lambda: self.win_action.open_url('bbs'))
         self.action_issue.triggered.connect(lambda: self.win_action.open_url('issue'))
         self.action_about.triggered.connect(self.win_action.about)
         self.action_clearcache.triggered.connect(self.win_action.clearcache)
         self.aisendsrt.toggled.connect(self.checkbox_state_changed)
-        self.rightbottom.clicked.connect(self.win_action.about)
-        self.statusLabel.clicked.connect(lambda: self.win_action.open_url('help'))
+        if hasattr(self, 'rightbottom'):
+            self.rightbottom.clicked.connect(self.win_action.about)
+        if self.statusLabel:
+            self.statusLabel.clicked.connect(lambda: self.win_action.open_url('help'))
         Path(config.TEMP_DIR + '/stop_process.txt').unlink(missing_ok=True)
 
 
@@ -595,7 +759,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         super().changeEvent(event)
         if event.type() == QEvent.Type.ActivationChange:
             if self.isActiveWindow():
-                self.aisendsrt.setChecked(config.settings.get('aisendsrt'))
+                try:
+                    if hasattr(self, 'aisendsrt') and self.aisendsrt is not None:
+                        self.aisendsrt.setChecked(config.settings.get('aisendsrt'))
+                except RuntimeError:
+                    # Widget might be deleted when switching central widget; ignore safely
+                    pass
 
     def kill_ffmpeg_processes(self):
         import platform
@@ -618,6 +787,283 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         except:
             pass
 
+    # ==================== HearSight功能集成 ====================
+
+    def _init_hearsight(self):
+        """初始化HearSight功能"""
+        import json
+
+        # 初始化配置
+        self.hearsight_config = None
+        self.hearsight_processor = None
+
+        # 加载配置
+        config_path = os.path.join(config.ROOT_DIR, 'hearsight_config.json')
+        if os.path.exists(config_path):
+            try:
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    self.hearsight_config = json.load(f)
+            except Exception as e:
+                print(f"加载HearSight配置失败: {e}")
+
+        # 添加按钮到工具栏
+        try:
+            self.hearsight_btn = QPushButton("🎯 智能摘要")
+            self.hearsight_btn.setToolTip(
+                "基于Whisper识别结果生成智能段落划分和LLM摘要\n"
+                "需要先完成语音识别并生成SRT字幕"
+            )
+            self.hearsight_btn.setStyleSheet("""
+                QPushButton {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 #34ce57, stop:1 #28a745);
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    font-weight: bold;
+                    min-width: 120px;
+                }
+                QPushButton:hover {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 #40d967, stop:1 #2dbd4e);
+                    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+                }
+                QPushButton:pressed {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 #218838, stop:1 #1e7e34);
+                }
+            """)
+            self.hearsight_btn.clicked.connect(self.open_hearsight)
+            self.hearsight_btn.setCursor(Qt.PointingHandCursor)
+
+            # 配置按钮
+            self.hearsight_config_btn = QPushButton("⚙️")
+            self.hearsight_config_btn.setToolTip("HearSight配置")
+            self.hearsight_config_btn.setFixedSize(42, 42)
+            self.hearsight_config_btn.setStyleSheet("""
+                QPushButton {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 #7c8a99, stop:1 #6c757d);
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    font-size: 18px;
+                }
+                QPushButton:hover {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 #8a98a7, stop:1 #7a8290);
+                    box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
+                }
+                QPushButton:pressed {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 #5a6268, stop:1 #4a5258);
+                }
+            """)
+            self.hearsight_config_btn.clicked.connect(self.open_hearsight_config)
+            self.hearsight_config_btn.setCursor(Qt.PointingHandCursor)
+
+            # 摘要管理按钮
+            self.summary_manager_btn = QPushButton("📚")
+            self.summary_manager_btn.setToolTip("查看和管理视频摘要库")
+            self.summary_manager_btn.setFixedSize(42, 42)
+            self.summary_manager_btn.setStyleSheet("""
+                QPushButton {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 #5aa9ff, stop:1 #4a9eff);
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    font-size: 18px;
+                }
+                QPushButton:hover {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 #6ab9ff, stop:1 #5aa9ff);
+                    box-shadow: 0 4px 8px rgba(74, 158, 255, 0.3);
+                }
+                QPushButton:pressed {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 #3a8eef, stop:1 #2a7edf);
+                }
+            """)
+            self.summary_manager_btn.clicked.connect(self.open_summary_manager)
+            self.summary_manager_btn.setCursor(Qt.PointingHandCursor)
+
+            # 添加到工具栏
+            if hasattr(self, 'toolBar'):
+                self.toolBar.addSeparator()
+                self.toolBar.addWidget(self.hearsight_btn)
+                self.toolBar.addWidget(self.hearsight_config_btn)
+                self.toolBar.addWidget(self.summary_manager_btn)
+
+        except Exception as e:
+            print(f"添加HearSight按钮失败: {e}")
+
+    def _load_hearsight_config(self):
+        """加载HearSight配置"""
+        import json
+
+        config_path = os.path.join(config.ROOT_DIR, 'hearsight_config.json')
+        if os.path.exists(config_path):
+            try:
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except Exception as e:
+                print(f"加载HearSight配置失败: {e}")
+
+        # 返回默认配置
+        return {
+            'llm': {
+                'api_key': '',
+                'base_url': 'https://api.openai.com/v1',
+                'model': 'gpt-3.5-turbo',
+                'temperature': 0.3,
+                'timeout': 120
+            },
+            'merge': {
+                'max_gap': 2.0,
+                'max_duration': 30.0,
+                'max_chars': 200
+            }
+        }
+
+    def open_hearsight_config(self):
+        """打开HearSight配置对话框"""
+        from videotrans.ui.hearsight_config import HearSightConfigDialog
+        from PySide6.QtWidgets import QMessageBox
+
+        try:
+            dialog = HearSightConfigDialog(self)
+            dialog.config_saved.connect(self._on_hearsight_config_saved)
+            dialog.exec()
+        except Exception as e:
+            QMessageBox.critical(self, "错误", f"打开配置对话框失败：\n{str(e)}")
+
+    def _on_hearsight_config_saved(self):
+        """配置保存后的回调"""
+        from PySide6.QtWidgets import QMessageBox
+
+        self.hearsight_config = self._load_hearsight_config()
+        QMessageBox.information(self, "提示", "配置已更新")
+
+    def open_hearsight(self):
+        """打开HearSight功能"""
+        from PySide6.QtWidgets import QMessageBox, QFileDialog, QProgressDialog
+        from videotrans.ui.hearsight_viewer import SummaryViewerDialog
+        from videotrans.hearsight.processor import HearSightProcessor
+
+        try:
+            # 检查配置
+            if not self.hearsight_config:
+                self.hearsight_config = self._load_hearsight_config()
+
+            llm_config = self.hearsight_config.get('llm', {})
+            if not llm_config.get('api_key'):
+                reply = QMessageBox.question(
+                    self,
+                    "配置提示",
+                    "尚未配置LLM API密钥，是否现在配置？",
+                    QMessageBox.Yes | QMessageBox.No
+                )
+                if reply == QMessageBox.Yes:
+                    self.open_hearsight_config()
+                return
+
+            # 选择SRT文件
+            srt_path, _ = QFileDialog.getOpenFileName(
+                self,
+                "选择SRT字幕文件",
+                config.params.get('target_dir', ''),
+                "SRT Files (*.srt);;All Files (*)"
+            )
+
+            if not srt_path:
+                return
+
+            # 创建进度对话框
+            progress = QProgressDialog("正在处理...", "取消", 0, 100, self)
+            progress.setWindowModality(Qt.WindowModal)
+            progress.setWindowTitle("HearSight处理中")
+            progress.setMinimumDuration(0)
+            progress.setValue(0)
+
+            # 创建处理器
+            self.hearsight_processor = HearSightProcessor(
+                srt_path=srt_path,
+                llm_config=self.hearsight_config['llm'],
+                merge_config=self.hearsight_config['merge']
+            )
+
+            # 连接信号
+            self.hearsight_processor.progress_updated.connect(
+                lambda text, percent: self._update_hearsight_progress(progress, text, percent)
+            )
+
+            self.hearsight_processor.finished.connect(
+                lambda summary, paragraphs: self._show_hearsight_result(progress, summary, paragraphs)
+            )
+
+            self.hearsight_processor.error_occurred.connect(
+                lambda error: self._handle_hearsight_error(progress, error)
+            )
+
+            # 开始处理
+            self.hearsight_processor.start()
+
+        except Exception as e:
+            QMessageBox.critical(self, "错误", f"启动HearSight处理失败：\n{str(e)}")
+
+    def _update_hearsight_progress(self, progress_dialog, text, percent):
+        """更新进度"""
+        progress_dialog.setLabelText(text)
+        progress_dialog.setValue(percent)
+
+    def _show_hearsight_result(self, progress_dialog, summary, paragraphs):
+        """显示处理结果"""
+        from videotrans.ui.hearsight_viewer import SummaryViewerDialog
+        from PySide6.QtWidgets import QMessageBox
+
+        try:
+            progress_dialog.close()
+
+            # 显示结果对话框
+            viewer = SummaryViewerDialog(self)
+            viewer.set_data(summary, paragraphs)
+            viewer.exec()
+
+        except Exception as e:
+            QMessageBox.critical(self, "错误", f"显示结果失败：\n{str(e)}")
+
+    def _handle_hearsight_error(self, progress_dialog, error):
+        """处理错误"""
+        from PySide6.QtWidgets import QMessageBox
+
+        progress_dialog.close()
+        QMessageBox.critical(
+            self,
+            "HearSight处理失败",
+            f"处理过程中发生错误：\n\n{error}\n\n"
+            "请检查：\n"
+            "1. SRT文件格式是否正确\n"
+            "2. LLM API配置是否正确\n"
+            "3. 网络连接是否正常"
+        )
+
+    def open_summary_manager(self):
+        """打开摘要管理对话框"""
+        from videotrans.ui.summary_manager import SummaryManagerDialog
+        from PySide6.QtWidgets import QMessageBox
+
+        try:
+            dialog = SummaryManagerDialog(self)
+            dialog.exec()
+        except Exception as e:
+            QMessageBox.critical(self, "错误", f"打开摘要管理失败：\n{str(e)}")
+
+    # ==================== HearSight功能集成结束 ====================
+
+
     def closeEvent(self, event):
         config.exit_soft = True
         config.current_status = 'stop'
@@ -626,7 +1072,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 f.write('stop')
         except:
             pass
-        sets = QSettings("pyvideotrans", "settings")
+        sets = QSettings("translateVideo", "settings")
         sets.setValue("windowSize", self.size())
         self.hide()
         try:

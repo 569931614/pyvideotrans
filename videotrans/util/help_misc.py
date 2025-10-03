@@ -84,7 +84,7 @@ def show_error(tb_str, report=True):
                                                  f"\nversion:{VERSION}"
                                                  f"\nfrozen:{getattr(sys, 'frozen', False)}"
                                                  f"\nlanguage:{config.defaulelang}")
-            full_url = f"https://bbs.pyvideotrans.com/?type=post&content={encoded_content}"
+            full_url = "about:blank"
 
             # 调用系统默认浏览器打开链接
             QDesktopServices.openUrl(QUrl(full_url))
@@ -95,22 +95,22 @@ def open_url(url=None, title: str = None):
     if url:
         return webbrowser.open_new_tab(url)
     title_url_dict = {
-        'bbs': "https://bbs.pyvideotrans.com",
+        'bbs': "about:blank",
         'ffmpeg': "https://www.ffmpeg.org/download.html",
-        'git': "https://github.com/jianchang512/pyvideotrans",
-        'issue': "https://github.com/jianchang512/pyvideotrans/issues",
-        'discord': "https://discord.gg/7ZWbwKGMcx",
-        'models': "https://github.com/jianchang512/stt/releases/tag/0.0",
-        'stt': "https://github.com/jianchang512/stt/",
+        'git': "about:blank",
+        'issue': "about:blank",
+        'discord': "about:blank",
+        'models': "about:blank",
+        'stt': "about:blank",
 
-        'gtrans': "https://pyvideotrans.com/aiocr",
-        'cuda': "https://pyvideotrans.com/gpu.html",
-        'website': "https://pyvideotrans.com",
-        'help': "https://pyvideotrans.com",
-        'xinshou': "https://pyvideotrans.com/getstart",
-        "about": "https://pyvideotrans.com/about",
-        'download': "https://github.com/jianchang512/pyvideotrans/releases",
-        'openvoice': "https://github.com/kungful/openvoice-api"
+        'gtrans': "about:blank",
+        'cuda': "about:blank",
+        'website': "about:blank",
+        'help': "about:blank",
+        'xinshou': "about:blank",
+        "about": "about:blank",
+        'download': "about:blank",
+        'openvoice': "about:blank"
     }
     if title and title in title_url_dict:
         return webbrowser.open_new_tab(title_url_dict[title])

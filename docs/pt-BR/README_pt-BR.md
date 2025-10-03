@@ -2,7 +2,7 @@
 
 ---
 
-[👑 Doe para este projeto](About_pt-BR.md) | [Link de convite para o Discord](https://discord.gg/y9gUweVCCJ) | Canal do WeChat: Procure por "pyvideotrans"
+[Link de convite para o Discord](https://discord.gg/y9gUweVCCJ) | Canal do WeChat: Procure por "pyvideotrans"
 
 ---
 

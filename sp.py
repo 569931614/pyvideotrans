@@ -1,14 +1,8 @@
 """
 
-pyVideoTrans: Translate the video from one language to another and add dubbing
+translateVideo: Translate the video from one language to another and add dubbing
 
-Home-page: https://github.com/jianchang512/pyvideotrans
-Author: jianchang512@gmail.com
-Documents: https://pyvideotrans.com
 License: GPL-V3
-
-# 代码是一坨屎，但又不是不能跑O(∩_∩)O~别在意那些细节
-# 写的这么烂，一看就不是AI写的
 
 """
 

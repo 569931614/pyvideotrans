@@ -2,7 +2,7 @@
 
 ---
 
-[👑Donar a este proyecto](../about.md) | [Enlace de invitación a Discord](https://discord.gg/mTh5Cu5Bqm) | Cuenta de WeChat: Buscar "pyvideotrans"
+[Enlace de invitación a Discord](https://discord.gg/mTh5Cu5Bqm) | Cuenta de WeChat: Buscar "pyvideotrans"
 
 ---
 

@@ -535,6 +535,13 @@ class Ui_MainWindow(object):
         self.enable_cuda.setToolTip(config.transobj['cudatips'])
         self.enable_cuda.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
 
+        # HearSight智能摘要勾选框
+        self.enable_hearsight = QtWidgets.QCheckBox(self.layoutWidget)
+        self.enable_hearsight.setMinimumSize(QtCore.QSize(50, 20))
+        self.enable_hearsight.setObjectName("enable_hearsight")
+        self.enable_hearsight.setToolTip("完成翻译后自动生成智能摘要并存储到向量库")
+        self.enable_hearsight.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+
         self.startbtn = QtWidgets.QPushButton(self.layoutWidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -547,6 +554,7 @@ class Ui_MainWindow(object):
         vhlayout = QtWidgets.QVBoxLayout()
         vhlayout.setAlignment(Qt.AlignVCenter)
         vhlayout.addWidget(self.enable_cuda)
+        vhlayout.addWidget(self.enable_hearsight)
 
         self.horizontalLayout_3.addLayout(vhlayout)
         self.horizontalLayout_3.addWidget(self.startbtn)

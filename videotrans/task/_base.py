@@ -42,6 +42,9 @@ class BaseTask(BaseCon):
         # 调用父类的真实 __init__
         super().__init__()
 
+        if self.cfg is None:
+            self.cfg = {}
+
         if self.obj:
             self.cfg.update(self.obj)
 

@@ -56,7 +56,7 @@ def run(raws, err, detect, *, model_name, is_cuda, detect_language, audio_file, 
             compute_type=com_type,
             download_root=down_root)
     except LocalEntryNotFoundError:
-        err['msg'] = '下载模型失败了请确认网络稳定后重试，如果已使用代理，请尝试关闭。 访问网址  https://pvt9.com/820  可查看详细详细解决方案' if defaulelang == 'zh' else 'Download model failed, please confirm network stable and try again. Visit https://pvt9.com/820 for more detail.'
+        err['msg'] = '下载模型失败了，请确认网络稳定后重试。如果已使用代理，请尝试关闭。' if defaulelang == 'zh' else 'Download model failed, please confirm the network is stable and try again.'
         return
     except Exception as e:
         error = str(e)
