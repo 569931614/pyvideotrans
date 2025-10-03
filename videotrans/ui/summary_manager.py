@@ -439,7 +439,16 @@ class SummaryManagerDialog(QDialog):
         self.tab_widget.addTab(self.summary_tab, "📋 整体摘要")
 
         # Tab 2: 段落列表
-        self.paragraph_tab = QTextBrowser()  # 使用QTextBrowser支持链接
+        # 创建自定义QTextBrowser，防止默认链接行为清空内容
+        class CustomTextBrowser(QTextBrowser):
+            def setSource(self, url):
+                """重写setSource，阻止默认的链接导航行为"""
+                print(f"⚠️ setSource被调用: {url.toString()}")
+                # 不调用父类的setSource，阻止默认行为
+                # 这样点击链接不会尝试加载新内容
+                pass
+
+        self.paragraph_tab = CustomTextBrowser()  # 使用自定义QTextBrowser
         self.paragraph_tab.setReadOnly(True)
         self.paragraph_tab.setOpenExternalLinks(False)  # 禁用默认链接处理
         self.paragraph_tab.anchorClicked.connect(self.on_time_link_clicked)  # 自定义链接处理
@@ -884,6 +893,10 @@ class SummaryManagerDialog(QDialog):
 
     def on_time_link_clicked(self, url: QUrl):
         """处理时间链接点击"""
+        print(f"\n🔗 链接被点击")
+        print(f"   URL: {url.toString()}")
+        print(f"   当前段落详情内容长度: {len(self.paragraph_tab.toPlainText())}")
+
         # 检查是否是播放视频的链接
         if url.scheme() == "playvideo":
             try:
@@ -919,11 +932,14 @@ class SummaryManagerDialog(QDialog):
                     return
 
                 # 播放视频并跳转到指定时间
+                print(f"📝 播放前段落详情内容长度: {len(self.paragraph_tab.toPlainText())}")
                 self.play_video_at_time(self.current_video_path, start_time)
+                print(f"📝 播放后段落详情内容长度: {len(self.paragraph_tab.toPlainText())}")
 
             except Exception as e:
                 import traceback
                 error_detail = traceback.format_exc()
+                print(f"❌ 异常后段落详情内容长度: {len(self.paragraph_tab.toPlainText())}")
                 QMessageBox.critical(
                     self,
                     "错误",
