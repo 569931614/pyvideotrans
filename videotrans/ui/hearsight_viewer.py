@@ -8,12 +8,10 @@ from PySide6.QtWidgets import (
     QPushButton, QLabel, QSplitter, QListWidget,
     QListWidgetItem, QMessageBox, QFileDialog
 )
-from PySide6.QtCore import Qt, Signal, QUrl
-from PySide6.QtGui import QFont, QDesktopServices
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QFont
 from typing import List, Dict, Any
 import os
-import subprocess
-import sys
 
 
 class SummaryViewerDialog(QDialog):
@@ -374,6 +372,41 @@ class SummaryViewerDialog(QDialog):
         except Exception as e:
             QMessageBox.critical(self, "错误", f"导出失败：\n{str(e)}")
 
+    def find_target_video(self, source_video_path: str) -> str:
+        """
+        查找翻译后的目标视频
+
+        Args:
+            source_video_path: 原始视频路径
+
+        Returns:
+            目标视频路径，如果找不到则返回原始路径
+        """
+        # 获取视频目录和文件名
+        video_dir = os.path.dirname(source_video_path)
+        video_basename = os.path.splitext(os.path.basename(source_video_path))[0]
+        video_ext = os.path.splitext(source_video_path)[1]
+
+        # 常见的目标视频命名模式
+        target_patterns = [
+            f"{video_basename}_target{video_ext}",  # 原名_target.mp4
+            f"{video_basename}-target{video_ext}",  # 原名-target.mp4
+            f"{video_basename}.target{video_ext}",  # 原名.target.mp4
+            f"{video_basename}_translated{video_ext}",  # 原名_translated.mp4
+            f"{video_basename}-translated{video_ext}",  # 原名-translated.mp4
+        ]
+
+        # 查找目标视频
+        for pattern in target_patterns:
+            target_path = os.path.join(video_dir, pattern)
+            if os.path.exists(target_path):
+                print(f"✅ 找到目标视频: {target_path}")
+                return target_path
+
+        # 如果找不到，返回原始视频
+        print(f"⚠️ 未找到目标视频，使用原始视频: {source_video_path}")
+        return source_video_path
+
     def on_paragraph_double_clicked(self, item: QListWidgetItem):
         """双击段落时播放视频"""
         para = item.data(Qt.UserRole)
@@ -398,113 +431,21 @@ class SummaryViewerDialog(QDialog):
         start_time = para.get("start_time", 0.0)
 
         try:
-            # 播放视频并跳转到指定时间
-            self.play_video_at_time(self.video_path, start_time)
+            # 查找翻译后的目标视频
+            target_video = self.find_target_video(self.video_path)
+
+            # 使用内嵌播放器
+            from videotrans.ui.video_player import VideoPlayerDialog
+
+            player = VideoPlayerDialog(target_video, start_time, self)
+            player.exec()
         except Exception as e:
-            QMessageBox.critical(self, "错误", f"播放视频失败：\n{str(e)}")
-
-    def play_video_at_time(self, video_path: str, start_time: float):
-        """
-        播放视频并跳转到指定时间
-
-        Args:
-            video_path: 视频文件路径
-            start_time: 开始时间（秒）
-        """
-        try:
-            # 根据操作系统选择合适的播放器
-            if sys.platform == 'win32':
-                self._play_video_windows(video_path, start_time)
-            elif sys.platform == 'darwin':
-                self._play_video_macos(video_path, start_time)
-            else:
-                self._play_video_linux(video_path, start_time)
-
-        except Exception as e:
-            # 如果专用播放器失败，尝试使用系统默认播放器
-            QMessageBox.warning(
+            import traceback
+            error_detail = traceback.format_exc()
+            QMessageBox.critical(
                 self,
-                "提示",
-                f"无法使用专用播放器跳转到指定时间。\n\n"
-                f"将使用系统默认播放器打开视频（从头开始播放）。\n\n"
-                f"建议安装VLC播放器以支持时间跳转功能。\n\n"
-                f"错误信息: {str(e)}"
+                "播放失败",
+                f"无法播放视频：\n{str(e)}\n\n详细信息:\n{error_detail}"
             )
-            # 使用系统默认播放器打开（不支持时间跳转）
-            QDesktopServices.openUrl(QUrl.fromLocalFile(video_path))
 
-    def _play_video_windows(self, video_path: str, start_time: float):
-        """Windows平台播放视频"""
-        vlc_paths = [
-            r"C:\Program Files\VideoLAN\VLC\vlc.exe",
-            r"C:\Program Files (x86)\VideoLAN\VLC\vlc.exe",
-        ]
 
-        for vlc_path in vlc_paths:
-            if os.path.exists(vlc_path):
-                subprocess.Popen([
-                    vlc_path,
-                    video_path,
-                    f"--start-time={int(start_time)}"
-                ])
-                return
-
-        potplayer_paths = [
-            r"C:\Program Files\DAUM\PotPlayer\PotPlayerMini64.exe",
-            r"C:\Program Files (x86)\DAUM\PotPlayer\PotPlayerMini.exe",
-        ]
-
-        for pot_path in potplayer_paths:
-            if os.path.exists(pot_path):
-                subprocess.Popen([
-                    pot_path,
-                    video_path,
-                    f"/seek={int(start_time)}"
-                ])
-                return
-
-        raise FileNotFoundError("未找到VLC或PotPlayer播放器")
-
-    def _play_video_macos(self, video_path: str, start_time: float):
-        """macOS平台播放视频"""
-        try:
-            subprocess.Popen([
-                "open", "-a", "IINA", video_path,
-                "--args", f"--mpv-start={int(start_time)}"
-            ])
-            return
-        except:
-            pass
-
-        try:
-            subprocess.Popen([
-                "open", "-a", "VLC", video_path,
-                "--args", f"--start-time={int(start_time)}"
-            ])
-            return
-        except:
-            pass
-
-        raise FileNotFoundError("未找到IINA或VLC播放器")
-
-    def _play_video_linux(self, video_path: str, start_time: float):
-        """Linux平台播放视频"""
-        try:
-            subprocess.Popen([
-                "vlc", video_path,
-                f"--start-time={int(start_time)}"
-            ])
-            return
-        except:
-            pass
-
-        try:
-            subprocess.Popen([
-                "mpv", video_path,
-                f"--start={int(start_time)}"
-            ])
-            return
-        except:
-            pass
-
-        raise FileNotFoundError("未找到VLC或MPV播放器")

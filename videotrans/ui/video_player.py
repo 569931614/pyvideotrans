@@ -1,0 +1,263 @@
+"""
+内嵌视频播放器
+使用Qt Multimedia实现视频播放和时间跳转
+"""
+from PySide6.QtWidgets import (
+    QDialog, QVBoxLayout, QHBoxLayout, QPushButton, 
+    QSlider, QLabel, QStyle, QSizePolicy
+)
+from PySide6.QtCore import Qt, QUrl, Signal
+from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
+from PySide6.QtMultimediaWidgets import QVideoWidget
+
+
+class VideoPlayerDialog(QDialog):
+    """视频播放器对话框"""
+    
+    # 信号：播放位置改变
+    position_changed = Signal(int)  # 毫秒
+    
+    def __init__(self, video_path: str, start_time: float = 0, parent=None):
+        """
+        初始化视频播放器
+        
+        Args:
+            video_path: 视频文件路径
+            start_time: 开始播放时间（秒）
+            parent: 父窗口
+        """
+        super().__init__(parent)
+        self.video_path = video_path
+        self.start_time = start_time
+        
+        self.setWindowTitle("视频播放器")
+        self.resize(960, 600)
+        
+        # 创建媒体播放器
+        self.player = QMediaPlayer(self)
+        self.audio_output = QAudioOutput(self)
+        self.player.setAudioOutput(self.audio_output)
+        
+        # 创建视频显示控件
+        self.video_widget = QVideoWidget(self)
+        self.player.setVideoOutput(self.video_widget)
+        
+        # 初始化UI
+        self.init_ui()
+        
+        # 连接信号
+        self.player.positionChanged.connect(self.on_position_changed)
+        self.player.durationChanged.connect(self.on_duration_changed)
+        self.player.playbackStateChanged.connect(self.on_state_changed)
+        
+        # 加载视频
+        self.load_video()
+    
+    def init_ui(self):
+        """初始化UI"""
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        
+        # 视频显示区域
+        self.video_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        layout.addWidget(self.video_widget)
+        
+        # 控制栏
+        control_layout = QHBoxLayout()
+        control_layout.setContentsMargins(10, 5, 10, 5)
+        
+        # 播放/暂停按钮
+        self.play_btn = QPushButton()
+        self.play_btn.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
+        self.play_btn.clicked.connect(self.toggle_play)
+        self.play_btn.setFixedSize(40, 40)
+        control_layout.addWidget(self.play_btn)
+        
+        # 停止按钮
+        self.stop_btn = QPushButton()
+        self.stop_btn.setIcon(self.style().standardIcon(QStyle.SP_MediaStop))
+        self.stop_btn.clicked.connect(self.stop)
+        self.stop_btn.setFixedSize(40, 40)
+        control_layout.addWidget(self.stop_btn)
+        
+        # 时间标签
+        self.time_label = QLabel("00:00 / 00:00")
+        self.time_label.setMinimumWidth(120)
+        control_layout.addWidget(self.time_label)
+        
+        # 进度条
+        self.position_slider = QSlider(Qt.Horizontal)
+        self.position_slider.setRange(0, 0)
+        self.position_slider.sliderMoved.connect(self.set_position)
+        control_layout.addWidget(self.position_slider)
+        
+        # 音量控制
+        volume_label = QLabel("🔊")
+        control_layout.addWidget(volume_label)
+        
+        self.volume_slider = QSlider(Qt.Horizontal)
+        self.volume_slider.setRange(0, 100)
+        self.volume_slider.setValue(70)
+        self.volume_slider.setMaximumWidth(100)
+        self.volume_slider.valueChanged.connect(self.set_volume)
+        control_layout.addWidget(self.volume_slider)
+        
+        # 全屏按钮
+        self.fullscreen_btn = QPushButton()
+        self.fullscreen_btn.setIcon(self.style().standardIcon(QStyle.SP_TitleBarMaxButton))
+        self.fullscreen_btn.clicked.connect(self.toggle_fullscreen)
+        self.fullscreen_btn.setFixedSize(40, 40)
+        control_layout.addWidget(self.fullscreen_btn)
+        
+        layout.addLayout(control_layout)
+        
+        # 设置样式
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #1a1a1a;
+            }
+            QPushButton {
+                background-color: #2a2a2a;
+                border: none;
+                border-radius: 5px;
+                color: white;
+            }
+            QPushButton:hover {
+                background-color: #3a3a3a;
+            }
+            QPushButton:pressed {
+                background-color: #4a4a4a;
+            }
+            QSlider::groove:horizontal {
+                border: 1px solid #999999;
+                height: 8px;
+                background: #2a2a2a;
+                margin: 2px 0;
+                border-radius: 4px;
+            }
+            QSlider::handle:horizontal {
+                background: #4a9eff;
+                border: 1px solid #5c5c5c;
+                width: 18px;
+                margin: -5px 0;
+                border-radius: 9px;
+            }
+            QSlider::handle:horizontal:hover {
+                background: #5aa9ff;
+            }
+            QLabel {
+                color: white;
+                padding: 0 5px;
+            }
+        """)
+    
+    def load_video(self):
+        """加载视频"""
+        self.player.setSource(QUrl.fromLocalFile(self.video_path))
+        # 设置初始音量
+        self.set_volume(70)
+    
+    def toggle_play(self):
+        """切换播放/暂停"""
+        if self.player.playbackState() == QMediaPlayer.PlayingState:
+            self.player.pause()
+        else:
+            self.player.play()
+    
+    def stop(self):
+        """停止播放"""
+        self.player.stop()
+    
+    def set_position(self, position):
+        """设置播放位置"""
+        self.player.setPosition(position)
+    
+    def set_volume(self, volume):
+        """设置音量"""
+        self.audio_output.setVolume(volume / 100.0)
+    
+    def toggle_fullscreen(self):
+        """切换全屏"""
+        if self.isFullScreen():
+            self.showNormal()
+            self.fullscreen_btn.setIcon(self.style().standardIcon(QStyle.SP_TitleBarMaxButton))
+        else:
+            self.showFullScreen()
+            self.fullscreen_btn.setIcon(self.style().standardIcon(QStyle.SP_TitleBarNormalButton))
+    
+    def on_position_changed(self, position):
+        """播放位置改变"""
+        self.position_slider.setValue(position)
+        self.update_time_label()
+        self.position_changed.emit(position)
+    
+    def on_duration_changed(self, duration):
+        """视频时长改变"""
+        self.position_slider.setRange(0, duration)
+        self.update_time_label()
+        
+        # 如果设置了开始时间，跳转到该位置
+        if self.start_time > 0:
+            self.player.setPosition(int(self.start_time * 1000))
+            self.start_time = 0  # 只跳转一次
+            # 自动开始播放
+            self.player.play()
+    
+    def on_state_changed(self, state):
+        """播放状态改变"""
+        if state == QMediaPlayer.PlayingState:
+            self.play_btn.setIcon(self.style().standardIcon(QStyle.SP_MediaPause))
+        else:
+            self.play_btn.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
+    
+    def update_time_label(self):
+        """更新时间标签"""
+        position = self.player.position() // 1000  # 转换为秒
+        duration = self.player.duration() // 1000
+        
+        position_str = f"{position // 60:02d}:{position % 60:02d}"
+        duration_str = f"{duration // 60:02d}:{duration % 60:02d}"
+        
+        self.time_label.setText(f"{position_str} / {duration_str}")
+    
+    def seek_to(self, time_seconds: float):
+        """
+        跳转到指定时间
+        
+        Args:
+            time_seconds: 时间（秒）
+        """
+        self.player.setPosition(int(time_seconds * 1000))
+        if self.player.playbackState() != QMediaPlayer.PlayingState:
+            self.player.play()
+    
+    def keyPressEvent(self, event):
+        """键盘事件"""
+        if event.key() == Qt.Key_Space:
+            self.toggle_play()
+        elif event.key() == Qt.Key_Escape and self.isFullScreen():
+            self.showNormal()
+            self.fullscreen_btn.setIcon(self.style().standardIcon(QStyle.SP_TitleBarMaxButton))
+        elif event.key() == Qt.Key_F:
+            self.toggle_fullscreen()
+        elif event.key() == Qt.Key_Left:
+            # 后退5秒
+            self.player.setPosition(max(0, self.player.position() - 5000))
+        elif event.key() == Qt.Key_Right:
+            # 前进5秒
+            self.player.setPosition(min(self.player.duration(), self.player.position() + 5000))
+        elif event.key() == Qt.Key_Up:
+            # 增加音量
+            self.volume_slider.setValue(min(100, self.volume_slider.value() + 10))
+        elif event.key() == Qt.Key_Down:
+            # 减少音量
+            self.volume_slider.setValue(max(0, self.volume_slider.value() - 10))
+        else:
+            super().keyPressEvent(event)
+    
+    def closeEvent(self, event):
+        """关闭事件"""
+        self.player.stop()
+        super().closeEvent(event)
+
