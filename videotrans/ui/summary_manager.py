@@ -601,7 +601,9 @@ class SummaryManagerDialog(QDialog):
                     para_text = doc
 
                 # 创建可点击的时间链接
-                time_link = f"playvideo://{start}"
+                # 注意：不能使用 playvideo://0.0 因为QUrl会将其解析为IP地址
+                # 使用路径格式：playvideo:///时间戳
+                time_link = f"playvideo:///{start}"
 
                 paragraphs_html += f"""
                 <div style="background: linear-gradient(135deg, #121829 0%, #0a0e27 100%);
@@ -885,14 +887,30 @@ class SummaryManagerDialog(QDialog):
 
     def on_time_link_clicked(self, url: QUrl):
         """处理时间链接点击"""
-        url_str = url.toString()
-
         # 检查是否是播放视频的链接
-        if url_str.startswith("playvideo://"):
+        if url.scheme() == "playvideo":
             try:
-                # 提取时间戳
-                time_str = url_str.replace("playvideo://", "")
-                start_time = float(time_str)
+                # 从URL路径中提取时间戳
+                # URL格式: playvideo:///时间戳
+                time_str = url.path().strip('/')
+
+                # 调试信息
+                print(f"🔍 Debug: URL scheme = {url.scheme()}")
+                print(f"🔍 Debug: URL path = {url.path()}")
+                print(f"🔍 Debug: time_str = '{time_str}'")
+
+                # 尝试转换为浮点数
+                try:
+                    start_time = float(time_str)
+                except ValueError as ve:
+                    QMessageBox.critical(
+                        self,
+                        "时间格式错误",
+                        f"无法解析时间戳：'{time_str}'\n\n"
+                        f"URL: {url.toString()}\n\n"
+                        f"错误: {str(ve)}"
+                    )
+                    return
 
                 # 检查视频文件是否存在
                 if not self.current_video_path or not os.path.exists(self.current_video_path):
@@ -907,7 +925,13 @@ class SummaryManagerDialog(QDialog):
                 self.play_video_at_time(self.current_video_path, start_time)
 
             except Exception as e:
-                QMessageBox.critical(self, "错误", f"播放视频失败：\n{str(e)}")
+                import traceback
+                error_detail = traceback.format_exc()
+                QMessageBox.critical(
+                    self,
+                    "错误",
+                    f"播放视频失败：\n{str(e)}\n\n详细信息:\n{error_detail}"
+                )
 
     def play_video_at_time(self, video_path: str, start_time: float):
         """
