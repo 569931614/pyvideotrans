@@ -399,7 +399,20 @@ class SummaryViewerDialog(QDialog):
         print(f"   文件名: {video_basename}")
         print(f"   扩展名: {video_ext}")
 
-        # 常见的目标视频命名模式
+        # 1. 首先检查标准的翻译输出位置
+        # 格式：原始目录/_video_out/视频名/视频名.mp4
+        standard_target_dir = os.path.join(video_dir, "_video_out", video_basename)
+        standard_target_path = os.path.join(standard_target_dir, f"{video_basename}{video_ext}")
+
+        print(f"\n   [标准位置] 检查翻译输出目录:")
+        print(f"   {standard_target_path}")
+        if os.path.exists(standard_target_path):
+            print(f"   ✅ 找到翻译后的视频（标准位置）: {standard_target_path}")
+            return standard_target_path
+        else:
+            print(f"   ⚠️ 标准位置不存在")
+
+        # 2. 检查同目录下的常见命名模式
         target_patterns = [
             f"{video_basename}_target{video_ext}",  # 原名_target.mp4
             f"{video_basename}-target{video_ext}",  # 原名-target.mp4
@@ -408,19 +421,18 @@ class SummaryViewerDialog(QDialog):
             f"{video_basename}-translated{video_ext}",  # 原名-translated.mp4
         ]
 
-        # 查找目标视频
-        print(f"   查找目标视频...")
+        print(f"\n   [同目录] 查找其他命名模式...")
         for i, pattern in enumerate(target_patterns, 1):
             target_path = os.path.join(video_dir, pattern)
             print(f"   [{i}] 检查: {os.path.basename(target_path)}")
             if os.path.exists(target_path):
-                print(f"   ✅ 找到目标视频: {target_path}")
+                print(f"   ✅ 找到目标视频（同目录）: {target_path}")
                 return target_path
             else:
                 print(f"       不存在")
 
         # 如果找不到，返回原始视频
-        print(f"   ⚠️ 未找到目标视频，使用原始视频: {source_video_path}")
+        print(f"\n   ⚠️ 未找到翻译后的视频，使用原始视频: {source_video_path}")
         return source_video_path
 
     def on_paragraph_double_clicked(self, item: QListWidgetItem):
