@@ -5,7 +5,7 @@ HearSight 摘要管理对话框
 """
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QSplitter,
-    QPushButton, QListWidget, QListWidgetItem, QTextEdit,
+    QPushButton, QListWidget, QListWidgetItem, QTextEdit, QTextBrowser,
     QLineEdit, QLabel, QMessageBox, QFileDialog, QComboBox, QSpinBox
 )
 from PySide6.QtCore import Qt, Signal, QThread, QUrl
@@ -99,7 +99,6 @@ class SummaryManagerDialog(QDialog):
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                     stop:0 #7a8290, stop:1 #6a7280);
                 border-color: #4f5b73;
-                transform: translateY(-2px);
             }
             QPushButton:pressed {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
@@ -188,8 +187,6 @@ class SummaryManagerDialog(QDialog):
             QPushButton:hover {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                     stop:0 #7c7ff5, stop:1 #6366f1);
-                box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
-                transform: translateY(-2px);
             }
             QPushButton:pressed {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
@@ -261,7 +258,6 @@ class SummaryManagerDialog(QDialog):
             QPushButton:hover {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                     stop:0 #34d399, stop:1 #10b981);
-                box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
             }
             QPushButton:disabled {
                 background: #2a3244;
@@ -288,7 +284,6 @@ class SummaryManagerDialog(QDialog):
             QPushButton:hover {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                     stop:0 #f87171, stop:1 #ef4444);
-                box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
             }
             QPushButton:disabled {
                 background: #2a3244;
@@ -447,12 +442,12 @@ class SummaryManagerDialog(QDialog):
         self.tab_widget.addTab(self.summary_tab, "📋 整体摘要")
 
         # Tab 2: 段落列表
-        self.paragraph_tab = QTextEdit()
+        self.paragraph_tab = QTextBrowser()  # 使用QTextBrowser支持链接
         self.paragraph_tab.setReadOnly(True)
         self.paragraph_tab.setOpenExternalLinks(False)  # 禁用默认链接处理
         self.paragraph_tab.anchorClicked.connect(self.on_time_link_clicked)  # 自定义链接处理
         self.paragraph_tab.setStyleSheet("""
-            QTextEdit {
+            QTextBrowser {
                 background-color: #121829;
                 color: #e8eef7;
                 border: none;
@@ -563,8 +558,7 @@ class SummaryManagerDialog(QDialog):
                             padding: 24px;
                             border-radius: 12px;
                             margin-bottom: 24px;
-                            border-left: 5px solid #6366f1;
-                            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);">
+                            border-left: 5px solid #6366f1;">
                     <p style="margin: 0; line-height: 2.0; color: #e8eef7; font-size: 16px;">
                         {summary_text}
                     </p>
