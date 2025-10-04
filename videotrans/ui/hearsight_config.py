@@ -21,61 +21,107 @@ class HearSightConfigDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.setWindowTitle("HearSight配置")
-        self.resize(700, 600)
+        self.setWindowTitle("⚙️ HearSight配置")
+        self.resize(750, 650)
         self.setStyleSheet("""
             QDialog {
-                background-color: #f8f9fa;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #f0f4f8, stop:1 #e8eef5);
             }
             QGroupBox {
                 font-weight: bold;
-                border: 2px solid #e0e0e0;
-                border-radius: 8px;
-                margin-top: 12px;
-                padding-top: 20px;
-                background-color: white;
+                border: 2px solid #d0dae6;
+                border-radius: 12px;
+                margin-top: 16px;
+                padding-top: 24px;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #ffffff, stop:1 #f8fbff);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
-                left: 15px;
-                padding: 0 8px;
-                color: #2c3e50;
-                font-size: 14px;
+                left: 20px;
+                padding: 0 10px;
+                color: #1a365d;
+                font-size: 15px;
+                font-weight: 600;
             }
             QLabel {
-                color: #495057;
+                color: #2d3748;
                 font-size: 13px;
+                font-weight: 500;
             }
             QLineEdit {
-                border: 2px solid #e0e0e0;
-                border-radius: 6px;
-                padding: 10px;
+                border: 2px solid #cbd5e0;
+                border-radius: 8px;
+                padding: 11px 14px;
                 background-color: white;
                 font-size: 13px;
-                color: #2c3e50;
+                color: #2d3748;
+                selection-background-color: #4a9eff;
             }
             QLineEdit:focus {
                 border-color: #4a9eff;
+                background-color: #f7fafc;
+                box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.1);
+            }
+            QLineEdit:hover {
+                border-color: #a0aec0;
             }
             QComboBox {
-                border: 2px solid #e0e0e0;
-                border-radius: 6px;
-                padding: 8px;
+                border: 2px solid #cbd5e0;
+                border-radius: 8px;
+                padding: 9px 12px;
                 background-color: white;
                 font-size: 13px;
+                color: #2d3748;
+                min-height: 20px;
             }
             QComboBox:focus {
                 border-color: #4a9eff;
+                background-color: #f7fafc;
+                box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.1);
+            }
+            QComboBox:hover {
+                border-color: #a0aec0;
+            }
+            QComboBox::drop-down {
+                border: none;
+                width: 30px;
+            }
+            QComboBox::down-arrow {
+                image: none;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-top: 6px solid #718096;
+                margin-right: 8px;
             }
             QDoubleSpinBox, QSpinBox {
-                border: 2px solid #e0e0e0;
-                border-radius: 6px;
-                padding: 8px;
+                border: 2px solid #cbd5e0;
+                border-radius: 8px;
+                padding: 9px 12px;
                 background-color: white;
                 font-size: 13px;
+                color: #2d3748;
+                min-height: 20px;
             }
             QDoubleSpinBox:focus, QSpinBox:focus {
                 border-color: #4a9eff;
+                background-color: #f7fafc;
+                box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.1);
+            }
+            QDoubleSpinBox:hover, QSpinBox:hover {
+                border-color: #a0aec0;
+            }
+            QDoubleSpinBox::up-button, QSpinBox::up-button,
+            QDoubleSpinBox::down-button, QSpinBox::down-button {
+                border: none;
+                background: transparent;
+                width: 20px;
+            }
+            QDoubleSpinBox::up-button:hover, QSpinBox::up-button:hover,
+            QDoubleSpinBox::down-button:hover, QSpinBox::down-button:hover {
+                background: #e2e8f0;
             }
         """)
 
@@ -85,24 +131,42 @@ class HearSightConfigDialog(QDialog):
     def init_ui(self):
         """初始化UI"""
         layout = QVBoxLayout(self)
-        layout.setSpacing(20)
-        layout.setContentsMargins(25, 25, 25, 25)
+        layout.setSpacing(24)
+        layout.setContentsMargins(30, 30, 30, 30)
+
+        # 顶部标题
+        title_label = QLabel("⚙️ HearSight 配置中心")
+        title_label.setStyleSheet("""
+            QLabel {
+                font-size: 20px;
+                font-weight: bold;
+                color: #1a365d;
+                padding: 10px 0;
+                margin-bottom: 10px;
+            }
+        """)
+        layout.addWidget(title_label)
 
         # LLM API配置组
         llm_group = QGroupBox("  🤖  LLM API 配置")
         llm_layout = QFormLayout()
+        llm_layout.setSpacing(16)
+        llm_layout.setLabelAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        llm_layout.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
 
         # API Key
         self.api_key_input = QLineEdit()
         self.api_key_input.setEchoMode(QLineEdit.Password)
-        self.api_key_input.setPlaceholderText("输入你的API密钥")
-        llm_layout.addRow("API Key *:", self.api_key_input)
+        self.api_key_input.setPlaceholderText("输入你的API密钥（必填）")
+        self.api_key_input.setMinimumWidth(350)
+        llm_layout.addRow("🔑 API Key *:", self.api_key_input)
 
         # Base URL
         self.base_url_input = QLineEdit()
         self.base_url_input.setPlaceholderText("例如: https://api.openai.com/v1")
         self.base_url_input.setText("https://api.openai.com/v1")
-        llm_layout.addRow("Base URL *:", self.base_url_input)
+        self.base_url_input.setMinimumWidth(350)
+        llm_layout.addRow("🌐 Base URL *:", self.base_url_input)
 
         # Model
         self.model_combo = QComboBox()
@@ -111,11 +175,13 @@ class HearSightConfigDialog(QDialog):
             "gpt-3.5-turbo",
             "gpt-4",
             "gpt-4-turbo",
+            "gpt-4o",
             "deepseek-chat",
             "gemini-pro",
             "claude-3-sonnet",
         ])
-        llm_layout.addRow("Model *:", self.model_combo)
+        self.model_combo.setMinimumWidth(350)
+        llm_layout.addRow("🤖 Model *:", self.model_combo)
 
         # Temperature
         self.temperature_spin = QDoubleSpinBox()
@@ -123,7 +189,8 @@ class HearSightConfigDialog(QDialog):
         self.temperature_spin.setSingleStep(0.1)
         self.temperature_spin.setValue(0.3)
         self.temperature_spin.setDecimals(1)
-        llm_layout.addRow("Temperature:", self.temperature_spin)
+        self.temperature_spin.setMinimumWidth(150)
+        llm_layout.addRow("🌡️ Temperature:", self.temperature_spin)
 
         # Timeout
         self.timeout_spin = QSpinBox()
@@ -131,7 +198,8 @@ class HearSightConfigDialog(QDialog):
         self.timeout_spin.setSingleStep(10)
         self.timeout_spin.setValue(120)
         self.timeout_spin.setSuffix(" 秒")
-        llm_layout.addRow("超时时间:", self.timeout_spin)
+        self.timeout_spin.setMinimumWidth(150)
+        llm_layout.addRow("⏱️ 超时时间:", self.timeout_spin)
 
         llm_group.setLayout(llm_layout)
         layout.addWidget(llm_group)
@@ -139,6 +207,9 @@ class HearSightConfigDialog(QDialog):
         # 段落合并配置组
         merge_group = QGroupBox("  📐  段落合并参数")
         merge_layout = QFormLayout()
+        merge_layout.setSpacing(16)
+        merge_layout.setLabelAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        merge_layout.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
 
         # 最大时间间隔
         self.max_gap_spin = QDoubleSpinBox()
@@ -147,7 +218,8 @@ class HearSightConfigDialog(QDialog):
         self.max_gap_spin.setValue(2.0)
         self.max_gap_spin.setDecimals(1)
         self.max_gap_spin.setSuffix(" 秒")
-        merge_layout.addRow("最大时间间隔:", self.max_gap_spin)
+        self.max_gap_spin.setMinimumWidth(150)
+        merge_layout.addRow("⏳ 最大时间间隔:", self.max_gap_spin)
 
         # 最大段落时长
         self.max_duration_spin = QDoubleSpinBox()
@@ -156,116 +228,130 @@ class HearSightConfigDialog(QDialog):
         self.max_duration_spin.setValue(30.0)
         self.max_duration_spin.setDecimals(0)
         self.max_duration_spin.setSuffix(" 秒")
-        merge_layout.addRow("最大段落时长:", self.max_duration_spin)
+        self.max_duration_spin.setMinimumWidth(150)
+        merge_layout.addRow("⏱️ 最大段落时长:", self.max_duration_spin)
 
         # 最大字符数
         self.max_chars_spin = QSpinBox()
         self.max_chars_spin.setRange(50, 1000)
         self.max_chars_spin.setSingleStep(50)
         self.max_chars_spin.setValue(200)
-        merge_layout.addRow("最大字符数:", self.max_chars_spin)
+        self.max_chars_spin.setMinimumWidth(150)
+        merge_layout.addRow("📝 最大字符数:", self.max_chars_spin)
 
         merge_group.setLayout(merge_layout)
         layout.addWidget(merge_group)
 
         # 说明文字
         note_label = QLabel(
-            "💡 提示：\n"
-            "• 支持所有OpenAI兼容的API（ChatGPT、DeepSeek、Gemini等）\n"
-            "• API Key 为必填项\n"
-            "• 段落合并参数影响段落划分效果，可根据需要调整"
+            "💡 <b>配置提示</b><br><br>"
+            "• 支持所有 OpenAI 兼容的 API（ChatGPT、DeepSeek、Gemini、Claude 等）<br>"
+            "• <b>API Key</b> 和 <b>Base URL</b> 为必填项<br>"
+            "• <b>Temperature</b> 控制生成的随机性（0.0-2.0，推荐 0.3）<br>"
+            "• 段落合并参数影响段落划分效果，可根据视频内容调整"
         )
+        note_label.setWordWrap(True)
         note_label.setStyleSheet("""
             QLabel {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #fff9e6, stop:1 #fff3d9);
+                    stop:0 #fffbf0, stop:1 #fff8e6);
                 border: 2px solid #ffd966;
-                border-left: 5px solid #ffb833;
-                border-radius: 8px;
-                padding: 15px;
-                color: #856404;
+                border-left: 6px solid #ffb833;
+                border-radius: 10px;
+                padding: 18px 20px;
+                color: #744210;
                 font-size: 13px;
-                line-height: 1.6;
+                line-height: 1.8;
             }
         """)
         layout.addWidget(note_label)
 
         # 按钮区域
         button_layout = QHBoxLayout()
+        button_layout.setSpacing(12)
 
-        self.test_btn = QPushButton("测试连接")
+        self.test_btn = QPushButton("🔌 测试连接")
         self.test_btn.clicked.connect(self.test_connection)
+        self.test_btn.setMinimumHeight(44)
         self.test_btn.setStyleSheet("""
             QPushButton {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #7c8a99, stop:1 #6c757d);
+                    stop:0 #667eea, stop:1 #5a67d8);
                 color: white;
                 border: none;
-                padding: 12px 24px;
-                border-radius: 8px;
-                font-size: 13px;
-                font-weight: bold;
+                padding: 12px 28px;
+                border-radius: 10px;
+                font-size: 14px;
+                font-weight: 600;
             }
             QPushButton:hover {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #8a98a7, stop:1 #7a8290);
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+                    stop:0 #7c8ef5, stop:1 #6b78e3);
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+                transform: translateY(-1px);
             }
             QPushButton:pressed {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #5a6268, stop:1 #4a5258);
+                    stop:0 #5a67d8, stop:1 #4c5ac7);
+                transform: translateY(0);
             }
             QPushButton:disabled {
-                background: #cccccc;
-                color: #666666;
+                background: #cbd5e0;
+                color: #a0aec0;
             }
         """)
 
-        self.save_btn = QPushButton("保存")
+        self.save_btn = QPushButton("💾 保存配置")
         self.save_btn.clicked.connect(self.save_config)
+        self.save_btn.setMinimumHeight(44)
         self.save_btn.setStyleSheet("""
             QPushButton {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #34ce57, stop:1 #28a745);
+                    stop:0 #48bb78, stop:1 #38a169);
                 color: white;
                 border: none;
-                padding: 12px 28px;
-                border-radius: 8px;
+                padding: 12px 32px;
+                border-radius: 10px;
                 font-size: 14px;
-                font-weight: bold;
+                font-weight: 600;
             }
             QPushButton:hover {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #40d967, stop:1 #2dbd4e);
-                box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+                    stop:0 #5ac98a, stop:1 #48bb78);
+                box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
+                transform: translateY(-1px);
             }
             QPushButton:pressed {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #218838, stop:1 #1e7e34);
+                    stop:0 #38a169, stop:1 #2f855a);
+                transform: translateY(0);
             }
         """)
 
-        self.cancel_btn = QPushButton("取消")
+        self.cancel_btn = QPushButton("❌ 取消")
         self.cancel_btn.clicked.connect(self.reject)
+        self.cancel_btn.setMinimumHeight(44)
         self.cancel_btn.setStyleSheet("""
             QPushButton {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #e54858, stop:1 #dc3545);
+                    stop:0 #fc8181, stop:1 #f56565);
                 color: white;
                 border: none;
-                padding: 12px 28px;
-                border-radius: 8px;
+                padding: 12px 32px;
+                border-radius: 10px;
                 font-size: 14px;
-                font-weight: bold;
+                font-weight: 600;
             }
             QPushButton:hover {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #ed5a68, stop:1 #e04555);
-                box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+                    stop:0 #feb2b2, stop:1 #fc8181);
+                box-shadow: 0 4px 12px rgba(245, 101, 101, 0.4);
+                transform: translateY(-1px);
             }
             QPushButton:pressed {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #c82333, stop:1 #b21f2d);
+                    stop:0 #f56565, stop:1 #e53e3e);
+                transform: translateY(0);
             }
         """)
 
