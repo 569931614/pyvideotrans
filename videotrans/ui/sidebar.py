@@ -89,8 +89,6 @@ class Sidebar(QWidget):
     hearsight_clicked = Signal()
     config_clicked = Signal()
     summary_clicked = Signal()
-    html_ui_clicked = Signal()
-    qt_ui_clicked = Signal()
     settings_clicked = Signal()
     about_clicked = Signal()
     
@@ -198,29 +196,6 @@ class Sidebar(QWidget):
         # 分隔线
         content_layout.addWidget(SidebarSeparator())
         
-        # 界面切换组
-        content_layout.addWidget(SidebarSection("界面"))
-        
-        self.html_ui_btn = SidebarButton(
-            "🌐", "HTML UI",
-            "切换到现代化HTML界面\n基于Web技术的全新用户体验"
-        )
-        self.html_ui_btn.setCheckable(True)
-        self.html_ui_btn.clicked.connect(self.html_ui_clicked.emit)
-        content_layout.addWidget(self.html_ui_btn)
-        
-        self.qt_ui_btn = SidebarButton(
-            "📋", "原始界面",
-            "切换回传统Qt界面"
-        )
-        self.qt_ui_btn.setCheckable(True)
-        self.qt_ui_btn.setChecked(True)
-        self.qt_ui_btn.clicked.connect(self.qt_ui_clicked.emit)
-        content_layout.addWidget(self.qt_ui_btn)
-        
-        # 分隔线
-        content_layout.addWidget(SidebarSeparator())
-        
         # 工具组
         content_layout.addWidget(SidebarSection("工具"))
         
@@ -268,14 +243,4 @@ class Sidebar(QWidget):
         
         # 设置固定宽度
         self.setFixedWidth(220)
-    
-    def set_html_ui_checked(self, checked):
-        """设置HTML UI按钮的选中状态"""
-        self.html_ui_btn.setChecked(checked)
-        self.qt_ui_btn.setChecked(not checked)
-    
-    def set_qt_ui_checked(self, checked):
-        """设置Qt UI按钮的选中状态"""
-        self.qt_ui_btn.setChecked(checked)
-        self.html_ui_btn.setChecked(not checked)
 

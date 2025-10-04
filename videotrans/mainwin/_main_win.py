@@ -354,24 +354,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 act.setVisible(False)
         # Also hide the Help menu if present
 
-        # Keep only '自定义视频翻译' feature: hide all menus and non-primary toolbar actions
+        # Hide all menus and toolbar
         for men in ['menu_Key', 'menu_TTS', 'menu_RECOGN', 'menu_H', 'menu']:
             if hasattr(self, men):
                 try:
                     getattr(self, men).menuAction().setVisible(False)
                 except Exception:
                     pass
-        for act_name in [
-            'action_tiquzimu','action_yuyinshibie','action_fanyi','action_yuyinhecheng',
-            'actionsrtmultirole','actionsubtitlescover','action_yingyinhebing',
-            'actionwatermark','actionvideoandaudio','actionvideoandsrt','actionformatcover',
-            'action_hebingsrt','actionsepar','action_clearcache','action_yinshipinfenli','action_hun'
-        ]:
-            act = getattr(self, act_name, None)
-            if act: act.setVisible(False)
-        # ensure primary action is selected
-        if hasattr(self, 'action_biaozhun'):
-            self.action_biaozhun.setVisible(True)
+
+        # Hide the entire toolbar
+        if hasattr(self, 'toolBar'):
+            self.toolBar.setVisible(False)
             self.action_biaozhun.setChecked(True)
 
         if hasattr(self, 'menu_H'):
@@ -628,10 +621,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     self._central_stack.setCurrentWidget(self._original_central)
                 else:
                     self.setCentralWidget(self._original_central)
-
-            # 同步侧边栏状态
-            if hasattr(self, 'sidebar') and self.sidebar:
-                self.sidebar.set_html_ui_checked(enabled)
 
         except Exception:
             # fallback to original UI
@@ -927,8 +916,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.sidebar.hearsight_clicked.connect(self.open_hearsight)
             self.sidebar.config_clicked.connect(self.open_hearsight_config)
             self.sidebar.summary_clicked.connect(self.open_summary_manager)
-            self.sidebar.html_ui_clicked.connect(lambda: self._toggle_html_ui_from_sidebar(True))
-            self.sidebar.qt_ui_clicked.connect(lambda: self._toggle_html_ui_from_sidebar(False))
             self.sidebar.settings_clicked.connect(self.open_settings)
             self.sidebar.about_clicked.connect(self.show_about)
 
@@ -956,17 +943,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             print(f"❌ 侧边栏初始化失败: {e}")
             import traceback
             traceback.print_exc()
-
-    def _toggle_html_ui_from_sidebar(self, use_html):
-        """从侧边栏切换HTML UI"""
-        if hasattr(self, 'action_html_ui'):
-            self.action_html_ui.setChecked(use_html)
-        else:
-            self._toggle_html_ui(use_html)
-
-        # 更新侧边栏按钮状态
-        if self.sidebar:
-            self.sidebar.set_html_ui_checked(use_html)
 
     def open_settings(self):
         """打开设置对话框"""
