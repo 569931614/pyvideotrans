@@ -36,13 +36,13 @@ class HearSightConfigDialog(QDialog):
                 padding-top: 24px;
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                     stop:0 #ffffff, stop:1 #f8fbff);
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
                 left: 20px;
                 padding: 0 10px;
-                color: #1a365d;
+                color: #2d3748;
+                background-color: white;
                 font-size: 15px;
                 font-weight: 600;
             }
@@ -50,6 +50,7 @@ class HearSightConfigDialog(QDialog):
                 color: #2d3748;
                 font-size: 13px;
                 font-weight: 500;
+                background-color: transparent;
             }
             QLineEdit {
                 border: 2px solid #cbd5e0;
@@ -141,6 +142,7 @@ class HearSightConfigDialog(QDialog):
                 font-size: 20px;
                 font-weight: bold;
                 color: #1a365d;
+                background-color: transparent;
                 padding: 10px 0;
                 margin-bottom: 10px;
             }
@@ -155,20 +157,26 @@ class HearSightConfigDialog(QDialog):
         llm_layout.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
 
         # API Key
+        api_key_label = QLabel("🔑 API Key *:")
+        api_key_label.setStyleSheet("QLabel { color: #2d3748; background-color: transparent; }")
         self.api_key_input = QLineEdit()
         self.api_key_input.setEchoMode(QLineEdit.Password)
         self.api_key_input.setPlaceholderText("输入你的API密钥（必填）")
         self.api_key_input.setMinimumWidth(350)
-        llm_layout.addRow("🔑 API Key *:", self.api_key_input)
+        llm_layout.addRow(api_key_label, self.api_key_input)
 
         # Base URL
+        base_url_label = QLabel("🌐 Base URL *:")
+        base_url_label.setStyleSheet("QLabel { color: #2d3748; background-color: transparent; }")
         self.base_url_input = QLineEdit()
         self.base_url_input.setPlaceholderText("例如: https://api.openai.com/v1")
         self.base_url_input.setText("https://api.openai.com/v1")
         self.base_url_input.setMinimumWidth(350)
-        llm_layout.addRow("🌐 Base URL *:", self.base_url_input)
+        llm_layout.addRow(base_url_label, self.base_url_input)
 
         # Model
+        model_label = QLabel("🤖 Model *:")
+        model_label.setStyleSheet("QLabel { color: #2d3748; background-color: transparent; }")
         self.model_combo = QComboBox()
         self.model_combo.setEditable(True)
         self.model_combo.addItems([
@@ -181,25 +189,29 @@ class HearSightConfigDialog(QDialog):
             "claude-3-sonnet",
         ])
         self.model_combo.setMinimumWidth(350)
-        llm_layout.addRow("🤖 Model *:", self.model_combo)
+        llm_layout.addRow(model_label, self.model_combo)
 
         # Temperature
+        temp_label = QLabel("🌡️ Temperature:")
+        temp_label.setStyleSheet("QLabel { color: #2d3748; background-color: transparent; }")
         self.temperature_spin = QDoubleSpinBox()
         self.temperature_spin.setRange(0.0, 2.0)
         self.temperature_spin.setSingleStep(0.1)
         self.temperature_spin.setValue(0.3)
         self.temperature_spin.setDecimals(1)
         self.temperature_spin.setMinimumWidth(150)
-        llm_layout.addRow("🌡️ Temperature:", self.temperature_spin)
+        llm_layout.addRow(temp_label, self.temperature_spin)
 
         # Timeout
+        timeout_label = QLabel("⏱️ 超时时间:")
+        timeout_label.setStyleSheet("QLabel { color: #2d3748; background-color: transparent; }")
         self.timeout_spin = QSpinBox()
         self.timeout_spin.setRange(10, 300)
         self.timeout_spin.setSingleStep(10)
         self.timeout_spin.setValue(120)
         self.timeout_spin.setSuffix(" 秒")
         self.timeout_spin.setMinimumWidth(150)
-        llm_layout.addRow("⏱️ 超时时间:", self.timeout_spin)
+        llm_layout.addRow(timeout_label, self.timeout_spin)
 
         llm_group.setLayout(llm_layout)
         layout.addWidget(llm_group)
@@ -212,6 +224,8 @@ class HearSightConfigDialog(QDialog):
         merge_layout.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
 
         # 最大时间间隔
+        max_gap_label = QLabel("⏳ 最大时间间隔:")
+        max_gap_label.setStyleSheet("QLabel { color: #2d3748; background-color: transparent; }")
         self.max_gap_spin = QDoubleSpinBox()
         self.max_gap_spin.setRange(0.5, 10.0)
         self.max_gap_spin.setSingleStep(0.5)
@@ -219,9 +233,11 @@ class HearSightConfigDialog(QDialog):
         self.max_gap_spin.setDecimals(1)
         self.max_gap_spin.setSuffix(" 秒")
         self.max_gap_spin.setMinimumWidth(150)
-        merge_layout.addRow("⏳ 最大时间间隔:", self.max_gap_spin)
+        merge_layout.addRow(max_gap_label, self.max_gap_spin)
 
         # 最大段落时长
+        max_duration_label = QLabel("⏱️ 最大段落时长:")
+        max_duration_label.setStyleSheet("QLabel { color: #2d3748; background-color: transparent; }")
         self.max_duration_spin = QDoubleSpinBox()
         self.max_duration_spin.setRange(10.0, 120.0)
         self.max_duration_spin.setSingleStep(5.0)
@@ -229,15 +245,17 @@ class HearSightConfigDialog(QDialog):
         self.max_duration_spin.setDecimals(0)
         self.max_duration_spin.setSuffix(" 秒")
         self.max_duration_spin.setMinimumWidth(150)
-        merge_layout.addRow("⏱️ 最大段落时长:", self.max_duration_spin)
+        merge_layout.addRow(max_duration_label, self.max_duration_spin)
 
         # 最大字符数
+        max_chars_label = QLabel("📝 最大字符数:")
+        max_chars_label.setStyleSheet("QLabel { color: #2d3748; background-color: transparent; }")
         self.max_chars_spin = QSpinBox()
         self.max_chars_spin.setRange(50, 1000)
         self.max_chars_spin.setSingleStep(50)
         self.max_chars_spin.setValue(200)
         self.max_chars_spin.setMinimumWidth(150)
-        merge_layout.addRow("📝 最大字符数:", self.max_chars_spin)
+        merge_layout.addRow(max_chars_label, self.max_chars_spin)
 
         merge_group.setLayout(merge_layout)
         layout.addWidget(merge_group)
