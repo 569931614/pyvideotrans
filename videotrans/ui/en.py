@@ -116,8 +116,34 @@ class Ui_MainWindow(object):
         self.translate_type.setToolTip(
             '选择用来翻译文字的渠道' if config.defaulelang == 'zh' else 'Select the channel used to translate text')
 
+        # 翻译设置按钮
+        self.translate_set_btn = QtWidgets.QPushButton(self.layoutWidget)
+        self.translate_set_btn.setMinimumSize(QtCore.QSize(35, 30))
+        self.translate_set_btn.setMaximumSize(QtCore.QSize(35, 30))
+        self.translate_set_btn.setObjectName("translate_set_btn")
+        self.translate_set_btn.setText("⚙️")
+        self.translate_set_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #4a9eff;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                font-size: 16px;
+            }
+            QPushButton:hover {
+                background-color: #5aa9ff;
+            }
+            QPushButton:pressed {
+                background-color: #3a8eef;
+            }
+        """)
+        self.translate_set_btn.setToolTip(
+            '配置当前翻译渠道的参数' if config.defaulelang == 'zh' else 'Configure current translation channel parameters')
+        self.translate_set_btn.setCursor(Qt.PointingHandCursor)
+
         self.horizontalLayout_5.addWidget(self.label_9)
         self.horizontalLayout_5.addWidget(self.translate_type)
+        self.horizontalLayout_5.addWidget(self.translate_set_btn)
 
         # 原始语言 目标语言 start
         self.label_2 = QtWidgets.QPushButton(self.layoutWidget)
@@ -192,8 +218,35 @@ class Ui_MainWindow(object):
         self.tts_type.setObjectName("tts_type")
         # self.tts_type.addItems(TTS_NAME_LIST)
         self.tts_type.setToolTip('选择用来配音的渠道' if config.defaulelang == 'zh' else 'Select the channel used to dub')
+
+        # 配音设置按钮
+        self.tts_set_btn = QtWidgets.QPushButton(self.layoutWidget)
+        self.tts_set_btn.setMinimumSize(QtCore.QSize(35, 30))
+        self.tts_set_btn.setMaximumSize(QtCore.QSize(35, 30))
+        self.tts_set_btn.setObjectName("tts_set_btn")
+        self.tts_set_btn.setText("⚙️")
+        self.tts_set_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #4a9eff;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                font-size: 16px;
+            }
+            QPushButton:hover {
+                background-color: #5aa9ff;
+            }
+            QPushButton:pressed {
+                background-color: #3a8eef;
+            }
+        """)
+        self.tts_set_btn.setToolTip(
+            '配置当前配音渠道的参数' if config.defaulelang == 'zh' else 'Configure current TTS channel parameters')
+        self.tts_set_btn.setCursor(Qt.PointingHandCursor)
+
         self.horizontalLayout.addWidget(self.tts_text)
         self.horizontalLayout.addWidget(self.tts_type)
+        self.horizontalLayout.addWidget(self.tts_set_btn)
 
         self.label_4 = QtWidgets.QPushButton(self.layoutWidget)
         self.label_4.setMinimumSize(QtCore.QSize(0, 30))
@@ -270,6 +323,31 @@ class Ui_MainWindow(object):
         # self.recogn_type.addItems(RECOGN_NAME_LIST)
         self.recogn_type.setToolTip(config.uilanglist['model_type_tips'])
 
+        # 语音识别设置按钮
+        self.recogn_set_btn = QtWidgets.QPushButton(self.layoutWidget)
+        self.recogn_set_btn.setMinimumSize(QtCore.QSize(35, 30))
+        self.recogn_set_btn.setMaximumSize(QtCore.QSize(35, 30))
+        self.recogn_set_btn.setObjectName("recogn_set_btn")
+        self.recogn_set_btn.setText("⚙️")
+        self.recogn_set_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #4a9eff;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                font-size: 16px;
+            }
+            QPushButton:hover {
+                background-color: #5aa9ff;
+            }
+            QPushButton:pressed {
+                background-color: #3a8eef;
+            }
+        """)
+        self.recogn_set_btn.setToolTip(
+            '配置当前语音识别渠道的参数' if config.defaulelang == 'zh' else 'Configure current recognition channel parameters')
+        self.recogn_set_btn.setCursor(Qt.PointingHandCursor)
+
         self.model_name_help = QtWidgets.QPushButton(self.layoutWidget)
         self.model_name_help.setStyleSheet("""background-color:transparent""")
         self.model_name_help.setText('选择模型\u2193' if config.defaulelang == 'zh' else 'Model\u2193')
@@ -332,6 +410,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_4.addWidget(self.reglabel)
         self.horizontalLayout_4.addWidget(self.recogn_type)
+        self.horizontalLayout_4.addWidget(self.recogn_set_btn)
         self.horizontalLayout_4.addWidget(self.model_name_help)
         self.horizontalLayout_4.addWidget(self.model_name)
         self.horizontalLayout_4.addWidget(self.show_spk)
