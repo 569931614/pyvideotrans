@@ -1264,17 +1264,30 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         progress_dialog.setValue(percent)
 
     def _show_hearsight_result(self, progress_dialog, summary, paragraphs, video_path=None):
-        """显示处理结果"""
-        from videotrans.ui.hearsight_viewer import SummaryViewerDialog
+        """显示处理结果 - 在右侧窗口显示"""
+        from videotrans.ui.hearsight_viewer import SummaryViewerWidget
         from PySide6.QtWidgets import QMessageBox
 
         try:
             progress_dialog.close()
 
-            # 显示结果对话框，传递video_path
-            viewer = SummaryViewerDialog(self, video_path=video_path)
-            viewer.set_data(summary, paragraphs)
-            viewer.exec()
+            # 创建或更新HearSight视图组件
+            if not hasattr(self, 'hearsight_viewer_widget'):
+                self.hearsight_viewer_widget = SummaryViewerWidget(self, video_path=video_path)
+
+                # 如果有_central_stack，添加到stack中
+                if hasattr(self, '_central_stack') and self._central_stack:
+                    self._central_stack.addWidget(self.hearsight_viewer_widget)
+
+            # 设置数据
+            self.hearsight_viewer_widget.set_data(summary, paragraphs)
+            self.hearsight_viewer_widget.set_video_path(video_path)
+
+            # 切换到HearSight视图
+            if hasattr(self, '_central_stack') and self._central_stack:
+                self._central_stack.setCurrentWidget(self.hearsight_viewer_widget)
+
+            QMessageBox.information(self, "成功", "HearSight处理完成！\n结果已显示在右侧窗口。")
 
         except Exception as e:
             QMessageBox.critical(self, "错误", f"显示结果失败：\n{str(e)}")

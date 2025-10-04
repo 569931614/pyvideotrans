@@ -4,7 +4,7 @@ HearSight摘要查看器UI
 显示段落划分和LLM生成的摘要
 """
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QTextEdit,
+    QDialog, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit,
     QPushButton, QLabel, QSplitter, QListWidget,
     QListWidgetItem, QMessageBox, QFileDialog
 )
@@ -497,4 +497,312 @@ class SummaryViewerDialog(QDialog):
                 f"无法播放视频：\n{str(e)}\n\n详细信息:\n{error_detail}"
             )
 
+
+class SummaryViewerWidget(QWidget):
+    """摘要查看器Widget - 用于嵌入主窗口"""
+
+    def __init__(self, parent=None, video_path=None):
+        super().__init__(parent)
+        self.paragraphs = []
+        self.summary = {}
+        self.video_path = video_path
+
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #f5f7fa;
+            }
+            QLabel {
+                color: #2c3e50;
+            }
+        """)
+
+        self.init_ui()
+
+    def init_ui(self):
+        """初始化UI - 复用Dialog的布局"""
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(10, 10, 10, 10)
+
+        # 顶部工具栏
+        toolbar = QHBoxLayout()
+
+        title_label = QLabel("📝 HearSight - 智能摘要")
+        title_label.setStyleSheet("""
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            padding: 5px;
+        """)
+        toolbar.addWidget(title_label)
+        toolbar.addStretch()
+
+        # 返回按钮
+        back_btn = QPushButton("← 返回主界面")
+        back_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #6c757d;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 6px;
+                font-size: 13px;
+            }
+            QPushButton:hover {
+                background-color: #5a6268;
+            }
+        """)
+        back_btn.clicked.connect(self.return_to_main)
+        toolbar.addWidget(back_btn)
+
+        layout.addLayout(toolbar)
+
+        # 总摘要区域
+        summary_label = QLabel("  📝  内容摘要")
+        summary_label.setStyleSheet("""
+            font-size: 16px;
+            font-weight: bold;
+            padding: 12px 15px;
+            color: #2c3e50;
+            background-color: white;
+            border-radius: 8px 8px 0 0;
+        """)
+        layout.addWidget(summary_label)
+
+        self.summary_text = QTextEdit()
+        self.summary_text.setReadOnly(True)
+        self.summary_text.setMaximumHeight(150)
+        self.summary_text.setStyleSheet("""
+            QTextEdit {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #ffffff, stop:1 #f0f8ff);
+                border: 2px solid #d6e9f5;
+                border-radius: 0 0 10px 10px;
+                padding: 18px;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        """)
+        layout.addWidget(self.summary_text)
+
+        # 段落列表和内容（分栏布局）
+        splitter = QSplitter(Qt.Horizontal)
+
+        # 左侧：段落列表
+        from PySide6.QtWidgets import QWidget as QW
+        left_container = QW()
+        left_layout = QVBoxLayout(left_container)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+
+        para_label = QLabel("  📑  段落列表")
+        para_label.setStyleSheet("""
+            font-size: 15px;
+            font-weight: bold;
+            padding: 10px 12px;
+            color: #2c3e50;
+            background-color: white;
+            border-radius: 8px 8px 0 0;
+        """)
+        left_layout.addWidget(para_label)
+
+        self.paragraph_list = QListWidget()
+        self.paragraph_list.setStyleSheet("""
+            QListWidget {
+                border: 2px solid #e8ecef;
+                border-radius: 0 0 10px 10px;
+                background-color: white;
+                outline: none;
+            }
+            QListWidget::item {
+                padding: 14px 12px;
+                border-bottom: 1px solid #f0f3f5;
+                color: #495057;
+                font-size: 13px;
+            }
+            QListWidget::item:hover {
+                background-color: #e3f2fd;
+            }
+            QListWidget::item:selected {
+                background-color: #2196f3;
+                color: white;
+            }
+        """)
+        self.paragraph_list.currentRowChanged.connect(self.on_paragraph_selected)
+        left_layout.addWidget(self.paragraph_list)
+
+        splitter.addWidget(left_container)
+
+        # 右侧：段落详情
+        right_container = QW()
+        right_layout = QVBoxLayout(right_container)
+        right_layout.setContentsMargins(0, 0, 0, 0)
+
+        detail_label = QLabel("  📄  段落详情")
+        detail_label.setStyleSheet("""
+            font-size: 15px;
+            font-weight: bold;
+            padding: 10px 12px;
+            color: #2c3e50;
+            background-color: white;
+            border-radius: 8px 8px 0 0;
+        """)
+        right_layout.addWidget(detail_label)
+
+        self.detail_text = QTextEdit()
+        self.detail_text.setReadOnly(True)
+        self.detail_text.setStyleSheet("""
+            QTextEdit {
+                border: 2px solid #e8ecef;
+                border-radius: 0 0 10px 10px;
+                background-color: white;
+                padding: 15px;
+                font-size: 13px;
+                line-height: 1.8;
+            }
+        """)
+        right_layout.addWidget(self.detail_text)
+
+        splitter.addWidget(right_container)
+        splitter.setStretchFactor(0, 1)
+        splitter.setStretchFactor(1, 2)
+
+        layout.addWidget(splitter)
+
+        # 底部按钮
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+
+        export_btn = QPushButton("💾 导出摘要")
+        export_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #28a745;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 6px;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background-color: #218838;
+            }
+        """)
+        export_btn.clicked.connect(self.export_summary)
+        button_layout.addWidget(export_btn)
+
+        layout.addLayout(button_layout)
+
+    def set_data(self, summary: Dict[str, Any], paragraphs: List[Dict[str, Any]]):
+        """设置数据"""
+        self.summary = summary
+        self.paragraphs = paragraphs
+
+        # 显示总摘要
+        summary_html = f"""
+        <div style="line-height: 1.8;">
+            <p style="margin: 0 0 10px 0;"><strong>📊 总时长：</strong>{summary.get('total_duration', 'N/A')}</p>
+            <p style="margin: 0 0 10px 0;"><strong>📝 段落数：</strong>{summary.get('paragraph_count', 0)}</p>
+            <p style="margin: 10px 0;"><strong>💡 内容概要：</strong></p>
+            <p style="margin: 0; color: #495057;">{summary.get('overall_summary', '暂无摘要')}</p>
+        </div>
+        """
+        self.summary_text.setHtml(summary_html)
+
+        # 填充段落列表
+        self.paragraph_list.clear()
+        for i, para in enumerate(paragraphs, 1):
+            item_text = f"段落 {i}  |  {para.get('start_time', '')} - {para.get('end_time', '')}"
+            item = QListWidgetItem(item_text)
+            item.setData(Qt.UserRole, para)
+            self.paragraph_list.addItem(item)
+
+        # 默认选中第一个
+        if paragraphs:
+            self.paragraph_list.setCurrentRow(0)
+
+    def set_video_path(self, video_path):
+        """设置视频路径"""
+        self.video_path = video_path
+
+    def on_paragraph_selected(self, index):
+        """段落选中事件"""
+        if index < 0 or index >= len(self.paragraphs):
+            return
+
+        para = self.paragraphs[index]
+
+        # 构建详情HTML
+        detail_html = f"""
+        <div style="line-height: 2.0;">
+            <h3 style="color: #2196f3; margin-top: 0;">段落 {index + 1}</h3>
+            <p><strong>⏱️ 时间范围：</strong>{para.get('start_time', '')} - {para.get('end_time', '')}</p>
+            <p><strong>⏳ 时长：</strong>{para.get('duration', 'N/A')}</p>
+
+            <h4 style="color: #ff9800; margin-top: 20px;">📝 段落摘要</h4>
+            <p style="background-color: #fff3e0; padding: 12px; border-left: 4px solid #ff9800; border-radius: 4px;">
+                {para.get('summary', '暂无摘要')}
+            </p>
+
+            <h4 style="color: #4caf50; margin-top: 20px;">📄 原文内容</h4>
+            <div style="background-color: #f1f8e9; padding: 12px; border-left: 4px solid #4caf50; border-radius: 4px;">
+                {para.get('text', '').replace(chr(10), '<br>')}
+            </div>
+        </div>
+        """
+
+        self.detail_text.setHtml(detail_html)
+
+    def export_summary(self):
+        """导出摘要"""
+        if not self.summary or not self.paragraphs:
+            QMessageBox.warning(self, "警告", "没有可导出的摘要数据")
+            return
+
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "导出摘要",
+            "",
+            "Markdown Files (*.md);;Text Files (*.txt);;All Files (*)"
+        )
+
+        if not file_path:
+            return
+
+        try:
+            content = self._generate_export_content()
+
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+
+            QMessageBox.information(self, "成功", f"摘要已导出到：\n{file_path}")
+
+        except Exception as e:
+            QMessageBox.critical(self, "错误", f"导出失败：\n{str(e)}")
+
+    def _generate_export_content(self) -> str:
+        """生成导出内容"""
+        lines = []
+        lines.append("# HearSight 智能摘要\n")
+        lines.append(f"**总时长：** {self.summary.get('total_duration', 'N/A')}\n")
+        lines.append(f"**段落数：** {self.summary.get('paragraph_count', 0)}\n")
+        lines.append(f"\n## 内容概要\n")
+        lines.append(f"{self.summary.get('overall_summary', '暂无摘要')}\n")
+        lines.append(f"\n## 段落详情\n")
+
+        for i, para in enumerate(self.paragraphs, 1):
+            lines.append(f"\n### 段落 {i}\n")
+            lines.append(f"**时间：** {para.get('start_time', '')} - {para.get('end_time', '')}\n")
+            lines.append(f"**时长：** {para.get('duration', 'N/A')}\n")
+            lines.append(f"\n**摘要：**\n{para.get('summary', '暂无摘要')}\n")
+            lines.append(f"\n**原文：**\n```\n{para.get('text', '')}\n```\n")
+
+        return "\n".join(lines)
+
+    def return_to_main(self):
+        """返回主界面"""
+        # 获取父窗口的_central_stack并切换回主界面
+        parent = self.parent()
+        if parent and hasattr(parent, '_central_stack'):
+            # 切换到第一个widget（通常是主界面）
+            parent._central_stack.setCurrentIndex(0)
+        elif parent and hasattr(parent, 'centralwidget'):
+            parent._central_stack.setCurrentWidget(parent.centralwidget)
 

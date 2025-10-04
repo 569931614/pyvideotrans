@@ -64,6 +64,10 @@ async function bootstrap() {
     bindSelectEvents();
     console.log('绑定下拉事件完成');
 
+  // Bind settings button events
+  bindSettingsButtons();
+  console.log('绑定设置按钮事件完成');
+
     // Set text input values
     const voiceRoleEl = document.getElementById('voice-role');
     const voiceRateEl = document.getElementById('voice-rate');
@@ -411,6 +415,73 @@ function onRecognChanged() {
       populateModelByRecogn(idx, opts);
     }
   });
+}
+
+// ========== Settings Buttons ==========
+
+function bindSettingsButtons() {
+  // 翻译设置按钮
+  const translateSettingsBtn = document.getElementById('btn-translate-settings');
+  if (translateSettingsBtn) {
+    translateSettingsBtn.addEventListener('click', async () => {
+      const hidden = document.getElementById('translate-type__value');
+      if (!hidden) return;
+
+      const translateType = parseInt(hidden.value, 10);
+      try {
+        const result = await bridge.openTranslateSettings(translateType);
+        if (result.success) {
+          showNotification('已打开翻译设置', 'success');
+        } else {
+          showNotification(result.message || '无需配置', 'info');
+        }
+      } catch (e) {
+        showNotification('打开设置失败: ' + e.message, 'error');
+      }
+    });
+  }
+
+  // 配音设置按钮
+  const ttsSettingsBtn = document.getElementById('btn-tts-settings');
+  if (ttsSettingsBtn) {
+    ttsSettingsBtn.addEventListener('click', async () => {
+      const hidden = document.getElementById('tts-type__value');
+      if (!hidden) return;
+
+      const ttsType = parseInt(hidden.value, 10);
+      try {
+        const result = await bridge.openTtsSettings(ttsType);
+        if (result.success) {
+          showNotification('已打开配音设置', 'success');
+        } else {
+          showNotification(result.message || '无需配置', 'info');
+        }
+      } catch (e) {
+        showNotification('打开设置失败: ' + e.message, 'error');
+      }
+    });
+  }
+
+  // 识别设置按钮
+  const recognSettingsBtn = document.getElementById('btn-recogn-settings');
+  if (recognSettingsBtn) {
+    recognSettingsBtn.addEventListener('click', async () => {
+      const hidden = document.getElementById('recogn-type__value');
+      if (!hidden) return;
+
+      const recognType = parseInt(hidden.value, 10);
+      try {
+        const result = await bridge.openRecognSettings(recognType);
+        if (result.success) {
+          showNotification('已打开识别设置', 'success');
+        } else {
+          showNotification(result.message || '无需配置', 'info');
+        }
+      } catch (e) {
+        showNotification('打开设置失败: ' + e.message, 'error');
+      }
+    });
+  }
 }
 
 // ========== Notification System ==========

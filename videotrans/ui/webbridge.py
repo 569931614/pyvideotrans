@@ -409,3 +409,137 @@ class WebBridge(QObject):
             traceback.print_exc()
             return {}
 
+    @Slot(int, result=dict)
+    def openTranslateSettings(self, translate_type: int) -> Dict[str, Any]:
+        """打开翻译设置对话框"""
+        try:
+            from videotrans import translator, winform
+
+            # 根据翻译类型打开对应的设置窗口
+            if translate_type == translator.BAIDU_INDEX:
+                winform.get_win('baidu').openwin()
+            elif translate_type == translator.ALI_INDEX:
+                winform.get_win('ali').openwin()
+            elif translate_type == translator.TENCENT_INDEX:
+                winform.get_win('tencent').openwin()
+            elif translate_type == translator.CHATGPT_INDEX:
+                winform.get_win('chatgpt').openwin()
+            elif translate_type == translator.AZUREGPT_INDEX:
+                winform.get_win('azure').openwin()
+            elif translate_type == translator.GEMINI_INDEX:
+                winform.get_win('gemini').openwin()
+            elif translate_type == translator.CLAUDE_INDEX:
+                winform.get_win('claude').openwin()
+            elif translate_type == translator.DEEPL_INDEX:
+                winform.get_win('deepL').openwin()
+            elif translate_type == translator.DEEPLX_INDEX:
+                winform.get_win('deepLX').openwin()
+            elif translate_type == translator.LOCALLLM_INDEX:
+                winform.get_win('localllm').openwin()
+            elif translate_type == translator.ZIJIE_INDEX:
+                winform.get_win('doubao').openwin()
+            elif translate_type == translator.TRANSAPI_INDEX:
+                winform.get_win('transapi').openwin()
+            elif translate_type == translator.QWENMT_INDEX:
+                winform.get_win('qwenmt').openwin()
+            elif translate_type == translator.LIBRE_INDEX:
+                winform.get_win('libre').openwin()
+            elif translate_type == translator.AI302_INDEX:
+                winform.get_win('ai302').openwin()
+            elif translate_type == translator.ZHIPUAI_INDEX:
+                winform.get_win('zhipuai').openwin()
+            elif translate_type == translator.SILICONFLOW_INDEX:
+                winform.get_win('siliconflow').openwin()
+            elif translate_type == translator.DEEPSEEK_INDEX:
+                winform.get_win('deepseek').openwin()
+            elif translate_type == translator.OPENROUTER_INDEX:
+                winform.get_win('openrouter').openwin()
+            else:
+                return {"success": False, "message": "当前翻译渠道无需配置"}
+
+            return {"success": True}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+
+    @Slot(int, result=dict)
+    def openTtsSettings(self, tts_type: int) -> Dict[str, Any]:
+        """打开配音设置对话框"""
+        try:
+            from videotrans import winform
+
+            # 根据配音类型打开对应的设置窗口
+            if tts_type == tts.AZURE_TTS:
+                winform.get_win('azuretts').openwin()
+            elif tts_type == tts.ELEVENLABS_TTS:
+                winform.get_win('elevenlabs').openwin()
+            elif tts_type == tts.AI302_TTS:
+                winform.get_win('ai302tts').openwin()
+            elif tts_type == tts.CLONE_VOICE_TTS:
+                winform.get_win('clone').openwin()
+            elif tts_type == tts.CHATTTS:
+                winform.get_win('chattts').openwin()
+            elif tts_type == tts.TTS_API:
+                winform.get_win('ttsapi').openwin()
+            elif tts_type == tts.GPTSOVITS_TTS:
+                winform.get_win('gptsovits').openwin()
+            elif tts_type == tts.COSYVOICE_TTS:
+                winform.get_win('cosyvoice').openwin()
+            elif tts_type == tts.F5_TTS:
+                winform.get_win('f5tts').openwin()
+            elif tts_type == tts.FISHTTS:
+                winform.get_win('fishtts').openwin()
+            elif tts_type == tts.OPENAI_TTS:
+                winform.get_win('openaitts').openwin()
+            elif tts_type == tts.VOLCENGINE_TTS:
+                winform.get_win('volcenginetts').openwin()
+            elif tts_type == tts.GOOGLECLOUD_TTS:
+                winform.get_win('googlecloud').openwin()
+            elif tts_type == tts.GEMINI_TTS:
+                winform.get_win('geminitts').openwin()
+            elif tts_type == tts.CHATTERBOX_TTS:
+                winform.get_win('chatterbox').openwin()
+            elif tts_type == tts.QWEN_TTS:
+                winform.get_win('qwentts').openwin()
+            elif tts_type == tts.KOKORO_TTS:
+                winform.get_win('kokoro').openwin()
+            else:
+                return {"success": False, "message": "当前配音渠道无需配置"}
+
+            return {"success": True}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+
+    @Slot(int, result=dict)
+    def openRecognSettings(self, recogn_type: int) -> Dict[str, Any]:
+        """打开语音识别设置对话框"""
+        try:
+            from videotrans import winform
+
+            # 根据识别类型打开对应的设置窗口
+            if recogn_type == recognition.OPENAI_API:
+                winform.get_win('openairecognapi').openwin()
+            elif recogn_type == recognition.CUSTOM_API:
+                winform.get_win('recognapi').openwin()
+            elif recogn_type == recognition.DOUBAO_API:
+                winform.get_win('doubao').openwin()
+            elif recogn_type == recognition.Deepgram:
+                winform.get_win('deepgram').openwin()
+            elif recogn_type == recognition.AI_302:
+                winform.get_win('ai302').openwin()
+            elif recogn_type == recognition.ElevenLabs:
+                winform.get_win('elevenlabs').openwin()
+            elif recogn_type == recognition.GEMINI_SPEECH:
+                winform.get_win('gemini').openwin()
+            elif recogn_type == recognition.PARAKEET:
+                winform.get_win('parakeet').openwin()
+            elif recogn_type == recognition.QWEN3ASR:
+                winform.get_win('qwenmt').openwin()
+            elif recogn_type == recognition.STT_API:
+                winform.get_win('stt').openwin()
+            else:
+                return {"success": False, "message": "当前识别渠道无需配置"}
+
+            return {"success": True}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+
