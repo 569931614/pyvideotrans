@@ -2,7 +2,7 @@
 
 ---
 
-[Enlace de invitación a Discord](https://discord.gg/mTh5Cu5Bqm) | Cuenta de WeChat: Buscar "pyvideotrans"
+Cuenta de WeChat: Buscar "BDvideoTrans"
 
 ---
 
@@ -15,7 +15,7 @@
 >
 > La traducción de texto soporta `Traducción de Microsoft|Traducción de Google|Traducción de Baidu|Traducción de Tencent|ChatGPT|AzureAI|Gemini|DeepL|DeepLX|Traducción offline OTT`
 >
-> La síntesis de texto a voz soporta `Microsoft Edge tts`, `Google tts`, `Azure AI TTS`, `Openai TTS`, `Elevenlabs TTS`, `API de servidor TTS personalizado`, `GPT-SoVITS`, [clone-voice](https://github.com/jianchang512/clone-voice), `[ChatTTS-ui](https://github.com/jianchang512/ChatTTS-ui)` [CosyVoice](https://github.com/FunAudioLLM/CosyVoice)
+> La síntesis de texto a voz soporta `Microsoft Edge tts`, `Google tts`, `Azure AI TTS`, `Openai TTS`, `Elevenlabs TTS`, `API de servidor TTS personalizado`, `GPT-SoVITS`, `clone-voice`, `ChatTTS-ui`, `CosyVoice`
 >
 > Permite mantener la música de fondo (basado en uvr5)
 > 
@@ -39,13 +39,13 @@
 
 ----
 
-https://github.com/jianchang512/pyvideotrans/assets/3378335/3811217a-26c8-4084-ba24-7a95d2e13d58
+
 
 # Versión Preempaquetada (solo para Windows 10/Windows 11, uso del código fuente para MacOS/Linux)
 
 > Empaquetado con pyinstaller, sin hacer indetectable o firmar, lo cual podría ser detectado por software antivirus. Por favor, añada a la lista de permitidos o use el código fuente para la implementación.
 
-0. [Haz clic para descargar la versión preempaquetada, descomprime en un directorio en inglés sin espacios y después haz doble clic en sp.exe](https://github.com/jianchang512/pyvideotrans/releases)
+0. Descarga la versión preempaquetada, descomprime en un directorio en inglés sin espacios y después haz doble clic en sp.exe
 
 1. Descomprime en una ruta en inglés y asegúrate de que la ruta no contenga espacios. Después de descomprimir, haz doble clic en sp.exe (si encuentras problemas de permisos, puedes abrirlo como administrador con clic derecho).
 
@@ -57,7 +57,7 @@ https://github.com/jianchang512/pyvideotrans/assets/3378335/3811217a-26c8-4084-b
 	
 	> Asegúrate de haber instalado Homebrew antes de ejecutar, si no lo has instalado, debes hacerlo primero.
 	>
-	> Ejecuta el comando para instalar Homebrew:  `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
+	> Ejecuta el comando para instalar Homebrew (consulte la documentación oficial de Homebrew)
 	>
 	> Después de instalar, ejecuta: `eval $(brew --config)`
 	>
@@ -87,8 +87,7 @@ https://github.com/jianchang512/pyvideotrans/assets/3378335/3811217a-26c8-4084-b
 
 
 1. Crea un directorio sin espacios ni caracteres chinos, y entra en él desde la terminal.
-2. En la terminal, ejecuta el comando `git clone https://github.com/jianchang512/pyvideotrans `
-3. Ejecuta el comando `cd pyvideotrans`
+2. Ejecuta el comando `cd BDvideoTrans`
 4. Continúa ejecutando `python -m venv venv`
 5. Sigue ejecutando el comando `source ./venv/bin/activate` para activar el entorno virtual. Asegúrate de que el prompt de la terminal ahora comienza con `(venv)`. Todos los comandos subsiguientes deben ser ejecutados asegurándote de que el prompt de la terminal comience con `(venv)`.
 
@@ -98,7 +97,7 @@ https://github.com/jianchang512/pyvideotrans/assets/3378335/3811217a-26c8-4084-b
 
 7. `python sp.py` para abrir la interfaz del software.
 
-[Esquema Detallado de Implementación en MacOS](https://pyvideotrans.com/mac.html)
+[Esquema Detallado de Implementación en MacOS](https://BDvideoTrans.com/mac.html)
 
 
 # Implementación del Código Fuente en Linux
@@ -149,12 +148,7 @@ apt install python3.10
 
 curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10
 
-<<<<<<< HEAD
 sudo update-alternatives --install /usr/bin/python python /usr/local/bin/python3.10  1
-=======
-
-sudo update-alternatives --install /usr/bin/python python /usr/local/bin/python3.10 
->>>>>>> 9485b1096d6a40a3fb6962a49df128397f10bdd5
 
 sudo update-alternatives --config python
 
@@ -166,11 +160,10 @@ apt-get install ffmpeg
 
 
 1. Crea un directorio sin espacios ni caracteres chinos, y abre esa carpeta desde la terminal.
-2. En la terminal, ejecuta el comando `git clone https://github.com/jianchang512/pyvideotrans`
-3. Continúa ejecutando el comando `cd pyvideotrans`
-4. Sigue con `python -m venv venv`
-5. Continúa con el comando `source ./venv/bin/activate` para activar el entorno virtual. Verifica que el prompt de la terminal ahora empiece con `(venv)`. Todos los siguientes comandos deben ser ejecutados asegurándote de que el prompt de la terminal empiece con `(venv)`.
-6. Ejecuta `pip install -r requirements.txt`. Si encuentras algún error, ejecuta los siguientes dos comandos para cambiar el espejo de pip al espejo de Alibaba
+2. Continúa ejecutando el comando `cd BDvideoTrans`
+3. Sigue con `python -m venv venv`
+4. Continúa con el comando `source ./venv/bin/activate` para activar el entorno virtual. Verifica que el prompt de la terminal ahora empiece con `(venv)`. Todos los siguientes comandos deben ser ejecutados asegurándote de que el prompt de la terminal empiece con `(venv)`.
+5. Ejecuta `pip install -r requirements.txt`. Si encuentras algún error, ejecuta los siguientes dos comandos para cambiar el espejo de pip al espejo de Alibaba
 
     ```
 
@@ -180,7 +173,7 @@ apt-get install ffmpeg
     ```
 
     Intenta ejecutar nuevamente. Si todavía tienes problemas después de cambiar al espejo de Alibaba, intenta ejecutar `pip install -r requirements.txt`
-7. Si deseas usar aceleración CUDA, ejecuta por separado
+6. Si deseas usar aceleración CUDA, ejecuta por separado
 
     `pip uninstall -y torch torchaudio`
 
@@ -189,10 +182,10 @@ apt-get install ffmpeg
 
     `pip install nvidia-cublas-cu11 nvidia-cudnn-cu11`
 
-8. Si deseas habilitar la aceleración CUDA en Linux, es necesario tener una tarjeta gráfica Nvidia y haber configurado correctamente el entorno CUDA11.8+. Busca "Instalación de CUDA en Linux" para más información.
+7. Si deseas habilitar la aceleración CUDA en Linux, es necesario tener una tarjeta gráfica Nvidia y haber configurado correctamente el entorno CUDA11.8+. Busca "Instalación de CUDA en Linux" para más información.
 
 
-9. `python sp.py` para abrir la interfaz del software.
+8. `python sp.py` para abrir la interfaz del software.
 
 # Implementación del Código Fuente en Windows 10/11
 
@@ -200,10 +193,10 @@ apt-get install ffmpeg
 
    **Abre un cmd y ejecuta `python -V`. Si la salida no es `3.10.4`, significa que hubo un error en la instalación o no se agregó a "PATH". Por favor, reinstala.**
 
-1. Abre https://github.com/git-for-windows/git/releases/download/v2.45.0.windows.1/Git-2.45.0-64-bit.exe, descarga Git y sigue las instrucciones de instalación.
+1. Descarga Git for Windows del sitio oficial y sigue las instrucciones de instalación.
 2. Elige un directorio sin espacios ni caracteres chinos, escribe `cmd` en la barra de direcciones y presiona Enter para abrir la terminal. Todos los comandos siguientes deben ser ejecutados en esta terminal.
-3. Ejecuta el comando `git clone https://github.com/jianchang512/pyvideotrans`
-4. Continúa con el comando `cd pyvideotrans`
+3. Obtenga el código fuente de BDvideoTrans
+4. Continúa con el comando `cd BDvideoTrans`
 5. Sigue con `python -m venv venv`
 6. Continúa con el comando `.\venv\scripts\activate`. Después de ejecutarlo, verifica que el comienzo de la línea de comandos haya cambiado a `(venv)`. De lo contrario, significa que hubo un error.
 7. Ejecuta `pip install -r requirements.txt  `. Si encuentras algún error, ejecuta los siguientes dos comandos para cambiar el espejo de pip al espejo de Alibaba
@@ -222,7 +215,7 @@ apt-get install ffmpeg
 
     `pip install torch==2.2.0 torchaudio==2.2.0 --index-url https://download.pytorch.org/whl/cu118`
 
-9. Si deseas habilitar la aceleración CUDA en Windows, es necesario tener una tarjeta gráfica Nvidia y haber configurado correctamente el entorno CUDA11.8+. Consulta [Soporte de Aceleración CUDA](https://pyvideotrans.com/gpu.html) para obtener detalles sobre la instalación.
+9. Si deseas habilitar la aceleración CUDA en Windows, es necesario tener una tarjeta gráfica Nvidia y haber configurado correctamente el entorno CUDA11.8+. Consulta [Soporte de Aceleración CUDA](https://BDvideoTrans.com/gpu.html) para obtener detalles sobre la instalación.
 
 10. Descomprime ffmpeg.zip en el directorio actual del código fuente. Si se solicita reemplazar, hazlo. Después de descomprimir, asegúrate de que en el directorio del código fuente puedas ver ffmpeg.exe, ffprobe.exe, ytwin32.exe,
 
@@ -244,13 +237,13 @@ pip install ctranslate2==3.24.0
 
 # Guía de Uso y Documentación
 
-Consulta https://pyvideotrans.com/guide.html para la guía de uso y documentación.
+Consulta https://BDvideoTrans.com/guide.html para la guía de uso y documentación.
 
 # Modelos de Reconocimiento de Voz:
 
-   Enlace de descarga: https://pyvideotrans.com/model.html
+   Enlace de descarga: https://BDvideoTrans.com/model.html
 
-   Explicación y diferencias entre modelos: https://pyvideotrans.com/02.html
+   Explicación y diferencias entre modelos: https://BDvideoTrans.com/02.html
 
 # Tutoriales en Vídeo (Terceros)
 
@@ -262,30 +255,13 @@ Consulta https://pyvideotrans.com/guide.html para la guía de uso y documentaci�
 
 # Capturas de Pantalla del Software
 
-![image](https://github.com/jianchang512/pyvideotrans/assets/3378335/c3abb561-1ab5-47f9-bfdc-609245445190)
-
-
-# Proyectos Relacionados
-
-[OTT: Herramienta de Traducción de Texto Offline Local](https://github.com/jianchang512/ott)
-
-[Herramienta de Clonación de Voz: Sintetización de Voz con Cualquier Tono](https://github.com/jianchang512/clone-voice)
-
-[Herramienta de Reconocimiento de Voz: Herramienta de Transcripción de Voz a Texto Offline Local](https://github.com/jianchang512/stt)
-
-[Herramienta de Separación de Voz y Música de Fondo](https://github.com/jianchang512/vocal-separate)
-
-[Versión mejorada de api.py para GPT-SoVITS](https://github.com/jianchang512/gptsovits-api)
-
-[  CosyVoice   api.py](https://github.com/jianchang512/cosyvoice-api)
-
 # Agradecimientos
 
 > Este programa depende principalmente de varios proyectos de código abierto
 
-1. [ffmpeg](https://github.com/FFmpeg/FFmpeg)
-2. [PySide6](https://pypi.org/project/PySide6/)
-3. [edge-tts](https://github.com/rany2/edge-tts)
-4. [faster-whisper](https://github.com/SYSTRAN/faster-whisper)
-5. [openai-whisper](https://github.com/openai/whisper)
-6. [pydub](https://github.com/jiaaro/pydub)
+1. ffmpeg
+2. PySide6
+3. edge-tts
+4. faster-whisper
+5. openai-whisper
+6. pydub

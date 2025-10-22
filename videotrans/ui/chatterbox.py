@@ -27,7 +27,7 @@ class Ui_chatterboxform(object):
 
         label_github = QLabel()
         label_github.setText(
-            '需要安装并启动 https://github.com/jianchang512/chatterbox-api 才可使用' if config.defaulelang == 'zh' else 'You need to install and start https://github.com/jianchang512/chatterbox-api before you can use it')
+            '需要安装并启动 chatterbox-api 才可使用' if config.defaulelang == 'zh' else 'You need to install and start chatterbox-api before you can use it')
 
         self.inner_v.addWidget(label_github)
 
@@ -89,7 +89,7 @@ class Ui_chatterboxform(object):
         help_btn.setObjectName("help_btn")
         help_btn.setCursor(Qt.PointingHandCursor)
         help_btn.setText("查看填写教程" if config.defaulelang == 'zh' else "Fill out the tutorial")
-        help_btn.clicked.connect(lambda: tools.open_url(url='https://pyvideotrans.com/chatterbox'))
+        help_btn.clicked.connect(lambda: tools.show_error("请参考项目文档" if config.defaulelang == 'zh' else "Please refer to the project documentation", False))
         h4.addWidget(self.save)
         h4.addWidget(self.test)
         h4.addWidget(help_btn)

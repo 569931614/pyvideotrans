@@ -190,11 +190,29 @@ def qwenmt_glossary():
 # 获取当前需要操作的prompt txt文件
 def get_prompt_file(ainame, is_srt=True):
     from videotrans.configure import config
-    prompt_path = f'{config.ROOT_DIR}/videotrans/'
+    from pathlib import Path
+
     prompt_name = f'{ainame}{"" if config.defaulelang == "zh" else "-en"}.txt'
+
+    # 如果是 SRT 模式且启用了自定义提示词，使用用户目录（可写）
     if is_srt and config.settings.get('aisendsrt', False):
-        prompt_path += 'prompts/srt/'
-    return f'{prompt_path}{prompt_name}'
+        user_prompt_path = f'{config.ROOT_DIR}/videotrans/prompts/srt/{prompt_name}'
+        # 如果用户自定义文件存在，使用它
+        if Path(user_prompt_path).exists():
+            return user_prompt_path
+        # 否则尝试从数据目录复制默认模板
+        default_prompt_path = f'{config.DATA_DIR}/videotrans/{prompt_name}'
+        if Path(default_prompt_path).exists():
+            # 确保目录存在
+            Path(f'{config.ROOT_DIR}/videotrans/prompts/srt').mkdir(parents=True, exist_ok=True)
+            # 复制默认模板到用户目录
+            import shutil
+            shutil.copy(default_prompt_path, user_prompt_path)
+            return user_prompt_path
+        return user_prompt_path  # 返回路径，即使文件不存在（可能会被创建）
+
+    # 默认情况：从数据目录读取（只读）
+    return f'{config.DATA_DIR}/videotrans/{prompt_name}'
 
 
 def check_local_api(api):

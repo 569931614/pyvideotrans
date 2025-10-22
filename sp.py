@@ -39,9 +39,11 @@ class StartWindow(QWidget):
         self.background_label = QLabel(self)
         # 尝试加载新的JPEG启动图，如果不存在则使用原PNG
         import os
-        logo_path = "./videotrans/styles/logo_new.jpeg"
+        from videotrans.configure import config
+        # 样式文件是只读数据，从 DATA_DIR 读取
+        logo_path = f"{config.DATA_DIR}/videotrans/styles/logo_new.jpeg"
         if not os.path.exists(logo_path):
-            logo_path = "./videotrans/styles/logo.png"
+            logo_path = f"{config.DATA_DIR}/videotrans/styles/logo.png"
         self.pixmap = QPixmap(logo_path)
         self.background_label.setPixmap(self.pixmap)
         self.background_label.setScaledContents(True)
@@ -65,9 +67,10 @@ class StartWindow(QWidget):
             center_point = screen.geometry().center()
             self.move(center_point.x() - self.width() // 2, center_point.y() - self.height() // 2)
 
-def initialize_full_app(start_window, app_instance):    
+def initialize_full_app(start_window, app_instance):
     import os
     import argparse
+    from videotrans.configure import config
 
 
     os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
@@ -95,13 +98,14 @@ def initialize_full_app(start_window, app_instance):
     parser.add_argument('--lang', type=str, help='Set the application language (e.g., en, zh)')
     cli_args, unknown = parser.parse_known_args()
     if cli_args.lang:
-        os.environ['PYVIDEOTRANS_LANG'] = cli_args.lang.lower()
+        os.environ['BDVIDEOTRANS_LANG'] = cli_args.lang.lower()
 
     # 导入qss image 资源
-    import videotrans.ui.dark.darkstyle_rc 
-    with open('./videotrans/styles/style.qss', 'r', encoding='utf-8') as f:
+    import videotrans.ui.dark.darkstyle_rc
+    # 样式文件是只读数据，从 DATA_DIR 读取
+    with open(f'{config.DATA_DIR}/videotrans/styles/style.qss', 'r', encoding='utf-8') as f:
         app_instance.setStyleSheet(f.read())
-    
+
     from videotrans.mainwin._main_win import MainWindow
     
     main_window_created = False
@@ -130,20 +134,22 @@ if __name__ == "__main__":
     # Windows 打包需要
     import multiprocessing
     multiprocessing.freeze_support()
-    
+
     # 设置 HighDpi
     try:
         QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
     except AttributeError:
         pass
-    
+
 
     app = QApplication(sys.argv)
-    
+
     splash = StartWindow()
-    splash.setWindowIcon(QIcon("./videotrans/styles/icon.ico"))
+    from videotrans.configure import config
+    # 图标文件是只读数据，从 DATA_DIR 读取
+    splash.setWindowIcon(QIcon(f"{config.DATA_DIR}/videotrans/styles/icon.ico"))
     splash.center()
     splash.show()
-    
+
     QTimer.singleShot(50, lambda: initialize_full_app(splash, app))
     sys.exit(app.exec())

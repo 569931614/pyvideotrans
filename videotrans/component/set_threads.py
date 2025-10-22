@@ -83,7 +83,7 @@ class SetThreadTransDubb(QDialog):
             help_btn.setObjectName("help_btn")
             help_btn.setCursor(Qt.PointingHandCursor)
             help_btn.setText("查看如何选择翻译渠道教程" if config.defaulelang == 'zh' else "Help document")
-            help_btn.clicked.connect(lambda: tools.open_url(url='https://pyvideotrans.com/selecttranslate'))
+            help_btn.clicked.connect(lambda: tools.show_error("请参考项目文档" if config.defaulelang == 'zh' else "Please refer to the project documentation", False))
             layout.addWidget(help_btn)
 
         self.setLayout(layout)

@@ -1,12 +1,10 @@
-# Download de Modelos para o PyVideoTrans
+# Download de Modelos para o BDvideoTrans
 
-O PyVideoTrans oferece suporte a uma variedade de modelos de reconhecimento de voz (Automatic Speech Recognition - ASR) para transcrição. Abaixo estão as instruções e links para download dos modelos disponíveis.
+O BDvideoTrans oferece suporte a uma variedade de modelos de reconhecimento de voz (Automatic Speech Recognition - ASR) para transcrição. Abaixo estão as instruções e links para download dos modelos disponíveis.
 
 ## Links para Download dos Modelos
 
-Para sua conveniência, você pode baixar todos os modelos de reconhecimento de voz em um único arquivo:
-
-- **Baixar todos os modelos de reconhecimento de voz:** [https://github.com/jianchang512/stt/releases/tag/0.0](https://github.com/jianchang512/stt/releases/tag/0.0)
+Para sua conveniência, você pode baixar todos os modelos de reconhecimento de voz em um único arquivo.
 
 ## Modelos Faster Whisper
 
@@ -16,29 +14,29 @@ Os modelos Faster Whisper são otimizados para velocidade e desempenho.
 
 1. Baixe o modelo desejado da lista abaixo.
 2. Extraia o arquivo baixado.
-3. Copie a pasta extraída, para o diretório `models` do PyVideoTrans.
+3. Copie a pasta extraída, para o diretório `models` do BDvideoTrans.
 
 ### Modelos Disponíveis
 
-| Nome do Modelo | Tamanho | Link para Download | Mirrors |
-| :------------- | :------ | :----------------- | :---------- |
-| tiny | 64MB | [GitHub Link](https://github.com/jianchang512/stt/releases/download/0.0/faster-tiny.7z)
-| tiny.en | 64MB | [GitHub Link](https://github.com/jianchang512/stt/releases/download/0.0/faster-tiny.en.7z)
-| base | 124MB | [GitHub Link](https://github.com/jianchang512/stt/releases/download/0.0/faster-base.7z)
-| base.en | 124MB | [GitHub Link](https://github.com/jianchang512/stt/releases/download/0.0/faster-base.en.7z)
-| small | 415MB | [GitHub Link](https://github.com/jianchang512/stt/releases/download/0.0/faster-small.7z) | [Baidu Netdisk](https://pan.baidu.com/s/1ROjy-UOjz_2a7I_cyzUj2g?pwd=frth) |
-| small.en | 415MB | [GitHub Link](https://github.com/jianchang512/stt/releases/download/0.0/faster-small.en.7z)
-| medium | 1.27G | [GitHub Link](https://github.com/jianchang512/stt/releases/download/0.0/faster-medium.7z)
-| medium.en | 1.27G | [GitHub Link](https://github.com/jianchang512/stt/releases/download/0.0/faster-medium.en.7z)
-| large-v1 | - | [Hugging Face Link](https://huggingface.co/spaces/mortimerme/s4/resolve/main/faster-large-v1.7z?download=true) | [Baidu Netdisk](https://pan.baidu.com/s/1IS5y0Pyo1okPQOW2uNaLbw?pwd=428z) | Baidu Netdisk |
-| large-v2 | - | [Hugging Face Link](https://huggingface.co/spaces/mortimerme/s4/blob/main/largev2-jieyao-dao-models.7z) | [Baidu Netdisk](https://pan.baidu.com/s/1pQiexsXSCtdN5yBeFAtwLw?pwd=yjmg) | Baidu Netdisk |
+| Nome do Modelo | Tamanho | Mirrors |
+| :------------- | :------ | :---------- |
+| tiny | 64MB |
+| tiny.en | 64MB |
+| base | 124MB |
+| base.en | 124MB |
+| small | 415MB | [Baidu Netdisk](https://pan.baidu.com/s/1ROjy-UOjz_2a7I_cyzUj2g?pwd=frth) |
+| small.en | 415MB |
+| medium | 1.27G |
+| medium.en | 1.27G |
+| large-v1 | - | [Hugging Face Link](https://huggingface.co/spaces/mortimerme/s4/resolve/main/faster-large-v1.7z?download=true) | [Baidu Netdisk](https://pan.baidu.com/s/1IS5y0Pyo1okPQOW2uNaLbw?pwd=428z) |
+| large-v2 | - | [Hugging Face Link](https://huggingface.co/spaces/mortimerme/s4/blob/main/largev2-jieyao-dao-models.7z) | [Baidu Netdisk](https://pan.baidu.com/s/1pQiexsXSCtdN5yBeFAtwLw?pwd=yjmg) |
 | large-v3 | - | [Hugging Face Link](https://huggingface.co/spaces/mortimerme/s4/resolve/main/largeV3Model-extract-models-folder-%E8%A7%A3%E5%8E%8B%E5%88%B0models%E7%9B%AE%E5%BD%95%E4%B8%8B.7z?download=true) | [Baidu Netdisk](https://pan.baidu.com/s/11a5NYCdRSW6VBOlGmeZdhg?pwd=he2w)
-| distil-whisper-small.en | 282MB | [GitHub Link](https://github.com/jianchang512/stt/releases/download/0.0/distil-whisper-small.en.7z)
-| distil-whisper-medium.en | 671MB | [GitHub Link](https://github.com/jianchang512/stt/releases/download/0.0/distil-whisper-medium.en.7z)
+| distil-whisper-small.en | 282MB |
+| distil-whisper-medium.en | 671MB |
 | distil-medium | - | [Baidu Netdisk](https://pan.baidu.com/s/1HXbf8lYBhlxkvX5ZTEtafA?pwd=443i)
-| distil-whisper-large-v2 | 1.27G | [GitHub Link](https://github.com/jianchang512/stt/releases/download/0.0/distil-whisper-large-v2.7z)
+| distil-whisper-large-v2 | 1.27G |
 | distil-large-v2 | - | [Baidu Netdisk](https://pan.baidu.com/s/1HXbf8lYBhlxkvX5ZTEtafA?pwd=443i)
-| distil-whisper-large-v3 | 1.3G | [GitHub Link](https://github.com/jianchang512/stt/releases/download/0.0/distil-whisper-large-v3.7z) | [Baidu Netdisk](https://pan.baidu.com/s/1bEeZg584tOvEXlIOx5QQGg?pwd=958n)
+| distil-whisper-large-v3 | 1.3G | [Baidu Netdisk](https://pan.baidu.com/s/1bEeZg584tOvEXlIOx5QQGg?pwd=958n)
 
 
 ### Estrutura de Pastas Esperada
@@ -106,29 +104,27 @@ O modelo UVR5 é um modelo de reconhecimento de voz específico para o idioma ch
 
 ### Instruções de Download
 
-1. Baixe o modelo UVR5: [https://github.com/jianchang512/stt/releases/download/0.0/uvr5-model.7z](https://github.com/jianchang512/stt/releases/download/0.0/uvr5-model.7z)
+1. Baixe o modelo UVR5
 2. Extraia o arquivo baixado.
-3. Copie a pasta `uvr5_weights` para o diretório raiz da instalação do PyVideoTrans (onde está localizado o arquivo `pyvideotrans.exe`).
+3. Copie a pasta `uvr5_weights` para o diretório raiz da instalação do BDvideoTrans (onde está localizado o arquivo `sp.exe`).
 
 ## Bibliotecas cuBLAS e cuDNN para Aceleração CUDA
 
-Se você possui uma placa de vídeo NVIDIA compatível com CUDA e deseja habilitar a aceleração por GPU no PyVideoTrans, precisará baixar as bibliotecas cuBLAS e cuDNN.
+Se você possui uma placa de vídeo NVIDIA compatível com CUDA e deseja habilitar a aceleração por GPU no BDvideoTrans, precisará baixar as bibliotecas cuBLAS e cuDNN.
 
 ### Instruções de Download
 
 1. Verifique a versão do seu CUDA executando o comando `nvcc -V` no terminal.
-2. Baixe as bibliotecas correspondentes à sua versão do CUDA:
-   - **CUDA 11.x:** [cuBLAS e cuDNN](https://github.com/jianchang512/stt/releases/download/0.0/cuBLAS.and.cuDNN_CUDA11_win_v4.7z)
-   - **CUDA 12.x:** [cuBLAS e cuDNN](https://github.com/jianchang512/stt/releases/download/0.0/cuBLAS.and.cuDNN_CUDA12_win_v1.7z)
+2. Baixe as bibliotecas correspondentes à sua versão do CUDA
 3. Extraia os arquivos baixados.
-4. Copie os arquivos `.dll` para o diretório `C:/Windows/System32` ou para o diretório raiz do PyVideoTrans.
+4. Copie os arquivos `.dll` para o diretório `C:/Windows/System32` ou para o diretório raiz do BDvideoTrans.
 
 ## Resolução de Problemas com cuBLAS e cuDNN
 
 Se você encontrar erros como "cublasxxx.dll não existe" ou o software travar após habilitar a aceleração CUDA, siga estas etapas:
 
 1. Verifique se você baixou as bibliotecas cuBLAS e cuDNN corretas para a sua versão do CUDA.
-2. Certifique-se de que os arquivos `.dll` foram copiados para o local correto (`C:/Windows/System32` ou o diretório raiz do PyVideoTrans).
-3. Reinicie o computador e tente executar o PyVideoTrans novamente.
+2. Certifique-se de que os arquivos `.dll` foram copiados para o local correto (`C:/Windows/System32` ou o diretório raiz do BDvideoTrans).
+3. Reinicie o computador e tente executar o BDvideoTrans novamente.
 
-Se o problema persistir, consulte a documentação do PyVideoTrans ou busque ajuda nos fóruns de suporte.
+Se o problema persistir, consulte a documentação do BDvideoTrans ou busque ajuda nos fóruns de suporte.

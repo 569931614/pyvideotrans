@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # coding=utf-8
 
-## 代码来自于开源项目 https://github.com/speechio/chinese_text_normalization
+## 代码来自于开源项目 chinese_text_normalization
 ## 下为原文件附带信息 
 
 # Authors:
@@ -62,7 +62,7 @@ COM_QUANTIFIERS = '(匹|张|座|回|场|尾|条|个|首|阙|阵|网|炮|顶|丘|
                   '盒|杯|钟|斛|锅|簋|篮|盘|桶|罐|瓶|壶|卮|盏|箩|箱|煲|啖|袋|钵|年|月|日|季|刻|时|周|天|秒|分|旬|' \
                   '纪|岁|世|更|夜|春|夏|秋|冬|代|伏|辈|丸|泡|粒|颗|幢|堆|条|根|支|道|面|片|张|颗|块)'
 
-# Punctuation information are based on Zhon project (https://github.com/tsroten/zhon.git)
+# Punctuation information are based on Zhon project
 CN_PUNCS_STOP = '！？｡。'
 CN_PUNCS_NONSTOP = '＂＃＄％＆＇（）＊＋，－／：；＜＝＞＠［＼］＾＿｀｛｜｝～｟｠｢｣､、〃《》「」『』【】〔〕〖〗〘〙〚〛〜〝〞〟〰〾〿–—‘’‛“”„‟…‧﹏·〈〉-'
 CN_PUNCS = CN_PUNCS_STOP + CN_PUNCS_NONSTOP
@@ -178,7 +178,7 @@ QJ2BJ = {
 QJ2BJ_TRANSFORM = str.maketrans(''.join(QJ2BJ.keys()), ''.join(QJ2BJ.values()), '')
 
 # 2013 China National Standard: https://zh.wikipedia.org/wiki/通用规范汉字表, raw resources:
-#   https://github.com/mozillazg/pinyin-data/blob/master/kMandarin_8105.txt with 8105 chinese chars in total
+#   kMandarin_8105.txt with 8105 chinese chars in total
 CN_CHARS_COMMON = (
     '一丁七万丈三上下不与丏丐丑专且丕世丘丙业丛东丝丞丢两严丧个丫中丰串临丸丹为主丽举'
     '乂乃久么义之乌乍乎乏乐乒乓乔乖乘乙乜九乞也习乡书乩买乱乳乸乾了予争事二亍于亏云互'

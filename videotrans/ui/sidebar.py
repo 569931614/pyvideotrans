@@ -173,15 +173,15 @@ class Sidebar(QWidget):
         content_layout.addWidget(SidebarSection("智能摘要"))
         
         self.hearsight_btn = SidebarButton(
-            "🎯", "HearSight",
-            "基于Whisper识别结果生成智能段落划分和LLM摘要\n需要先完成语音识别并生成SRT字幕"
+            "🎯", "导入字幕",
+            "导入SRT字幕文件生成智能段落划分和摘要"
         )
         self.hearsight_btn.clicked.connect(self.hearsight_clicked.emit)
         content_layout.addWidget(self.hearsight_btn)
-        
+
         self.config_btn = SidebarButton(
             "⚙️", "摘要配置",
-            "配置HearSight的LLM参数、提示词等设置"
+            "配置智能摘要的LLM参数、提示词等设置"
         )
         self.config_btn.clicked.connect(self.config_clicked.emit)
         content_layout.addWidget(self.config_btn)
@@ -198,14 +198,15 @@ class Sidebar(QWidget):
         
         # 工具组
         content_layout.addWidget(SidebarSection("工具"))
-        
-        self.settings_btn = SidebarButton(
-            "⚙️", "设置",
-            "应用程序设置和高级选项"
-        )
-        self.settings_btn.clicked.connect(self.settings_clicked.emit)
-        content_layout.addWidget(self.settings_btn)
-        
+
+        # 移除设置按钮
+        # self.settings_btn = SidebarButton(
+        #     "⚙️", "设置",
+        #     "应用程序设置和高级选项"
+        # )
+        # self.settings_btn.clicked.connect(self.settings_clicked.emit)
+        # content_layout.addWidget(self.settings_btn)
+
         self.about_btn = SidebarButton(
             "ℹ️", "关于",
             "关于BDvideoTrans"

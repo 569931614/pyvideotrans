@@ -1,7 +1,7 @@
 [project]
-name = "translateVideo"
+name = "BDvideoTrans"
 version = "3.78"
-description = "Open Source Video Translation software"
+description = "Video Translation software"
 authors = []
 license-files = ["LICEN[CS]E*"]
 readme = "README.md"

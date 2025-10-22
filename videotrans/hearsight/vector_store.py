@@ -368,25 +368,66 @@ class VectorStore:
 _vector_store = None
 
 
-def get_vector_store(persist_directory: str = None) -> VectorStore:
+def get_vector_store(persist_directory: str = None, force_backend: str = None):
     """
-    获取全局向量存储实例
+    获取全局向量存储实例，支持多种后端
 
     Args:
         persist_directory: 持久化目录路径
+        force_backend: 强制使用的后端 ('chromadb' 或 'volcengine')
 
     Returns:
-        VectorStore: 向量存储实例
+        VectorStore 或 VolcengineVectorClient: 向量存储实例
     """
     global _vector_store
 
     if _vector_store is None:
-        if persist_directory is None:
-            # 默认存储在项目根目录下的 vector_db 目录
-            from videotrans.configure import config
-            persist_directory = os.path.join(config.ROOT_DIR, 'vector_db')
+        from videotrans.configure import config
 
-        _vector_store = VectorStore(persist_directory)
-        _vector_store.initialize()
+        # 确定使用哪个后端
+        backend = force_backend
+        if backend is None:
+            # 从配置中读取
+            hearsight_cfg = getattr(config, 'hearsight_config', {})
+            vector_cfg = hearsight_cfg.get('vector', {})
+            backend = vector_cfg.get('type', 'chromadb')
+
+        # 根据backend创建实例
+        if backend == 'volcengine':
+            print("📊 使用火山引擎向量化服务")
+
+            vector_cfg = getattr(config, 'hearsight_config', {}).get('vector', {})
+            volc_cfg = vector_cfg.get('volcengine', {})
+
+            from videotrans.hearsight.volcengine_vector import VolcengineVectorClient
+
+            _vector_store = VolcengineVectorClient(
+                api_key=volc_cfg.get('api_key', ''),
+                base_url=volc_cfg.get('base_url', 'https://ark.cn-beijing.volces.com/api/v3'),
+                collection_name=volc_cfg.get('collection_name', 'video_summaries'),
+                embedding_model=volc_cfg.get('embedding_model', '')
+            )
+        else:
+            print("📊 使用ChromaDB本地向量存储")
+
+            # 优先使用传入的persist_directory，其次使用配置文件中的，最后使用默认路径
+            if persist_directory is None:
+                hearsight_cfg = getattr(config, 'hearsight_config', {})
+                vector_cfg = hearsight_cfg.get('vector', {})
+                persist_directory = vector_cfg.get('persist_directory')
+
+                if persist_directory is None:
+                    persist_directory = os.path.join(config.ROOT_DIR, 'vector_db')
+
+                print(f"📁 向量库路径: {persist_directory}")
+
+            _vector_store = VectorStore(persist_directory)
+            _vector_store.initialize()
 
     return _vector_store
+
+
+def reset_vector_store():
+    """重置全局向量存储实例（用于切换后端）"""
+    global _vector_store
+    _vector_store = None

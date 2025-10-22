@@ -742,8 +742,8 @@ def send_notification(title, message):
         notification.notify(
             title=title[:60],
             message=message[:120],
-            ticker="pyVideoTrans",
-            app_name="pyVideoTrans",  # config.uilanglist['SP-video Translate Dubbing'],
+            ticker="BDvideoTrans",
+            app_name="BDvideoTrans",  # config.uilanglist['SP-video Translate Dubbing'],
             app_icon=config.ROOT_DIR + '/videotrans/styles/icon.ico',
             timeout=10  # Display duration in seconds
         )

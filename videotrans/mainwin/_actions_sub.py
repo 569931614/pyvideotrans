@@ -62,7 +62,7 @@ class WinActionSub:
 
         # 检查哪个按钮被点击
         if msg_box.clickedButton() == tutorial_button:
-            tools.open_url("https://pyvideotrans.com/selectmodel")  # 调用模型选择教程的函数
+            tools.show_error("请参考项目文档" if config.defaulelang == 'zh' else "Please refer to the project documentation", False)
 
     def update_tips(self, text):
         if not self.update_btn:
@@ -302,6 +302,25 @@ class WinActionSub:
             self.main.close()
 
     def get_mp4(self):
+        # 如果有正在运行的任务，先停止并清理
+        if config.current_status == 'ing':
+            # 提示用户
+            reply = QtWidgets.QMessageBox.question(
+                self.main,
+                '确认操作' if config.defaulelang == 'zh' else 'Confirm',
+                '检测到有正在运行的任务，重新选择视频将停止当前任务并清空任务列表。是否继续？' if config.defaulelang == 'zh'
+                else 'A task is currently running. Selecting new videos will stop the current task and clear the task list. Continue?',
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+            )
+            if reply != QtWidgets.QMessageBox.Yes:
+                return
+            # 停止当前任务
+            self.update_status('stop')
+
+        # 清理旧的任务按钮和队列
+        self.delete_process()
+        self.queue_mp4 = []
+
         if self.main.app_mode == 'tiqu':
             allowed_exts = config.VIDEO_EXTS + config.AUDIO_EXITS
         else:
@@ -326,6 +345,7 @@ class WinActionSub:
             config.params['last_opendir'] = p.parent.as_posix()
             self.main.target_dir = config.params['last_opendir'] + f'/{p.name}_video_out'
             self.main.btn_save_dir.setToolTip(self.main.target_dir)
+            self.update_save_dir_label(self.main.target_dir)
         else:
             fnames, _ = QtWidgets.QFileDialog.getOpenFileNames(self.main,
                                                                '选择一或多个文件' if config.defaulelang == 'zh' else "Select one or more files",
@@ -338,6 +358,7 @@ class WinActionSub:
             config.params['last_opendir'] = Path(mp4_list[0]).parent.resolve().as_posix()
             self.main.target_dir = config.params['last_opendir'] + f'/_video_out'
             self.main.btn_save_dir.setToolTip(self.main.target_dir)
+            self.update_save_dir_label(self.main.target_dir)
 
         if len(mp4_list) > 0:
             self.main.source_mp4.setText(f'{len((mp4_list))} videos')
@@ -350,6 +371,56 @@ class WinActionSub:
         dirname = Path(dirname).as_posix()
         self.main.target_dir = dirname
         self.main.btn_save_dir.setToolTip(self.main.target_dir)
+        # 更新保存路径标签
+        if dirname:
+            self.update_save_dir_label(dirname)
+
+    # 更新保存路径标签
+    def update_save_dir_label(self, dirname):
+        if not dirname or dirname == '.':
+            self.main.save_dir_label.setText("📁 " + ("未选择" if config.defaulelang == 'zh' else "Not selected"))
+            self.main.save_dir_label.setToolTip("")
+        else:
+            # 缩短显示的路径，只显示最后几个部分
+            display_text = dirname
+            if len(dirname) > 45:
+                parts = dirname.split('/')
+                if len(parts) > 3:
+                    display_text = '.../' + '/'.join(parts[-2:])
+                else:
+                    display_text = '...' + dirname[-42:]
+            self.main.save_dir_label.setText("📁 " + display_text)
+            self.main.save_dir_label.setToolTip(f"{'点击打开文件夹' if config.defaulelang == 'zh' else 'Click to open folder'}:\n{dirname}")
+
+    # 打开保存文件夹
+    def open_save_dir(self):
+        if not hasattr(self.main, 'target_dir') or not self.main.target_dir or self.main.target_dir == '.':
+            tools.show_error("请先选择保存目录" if config.defaulelang == 'zh' else "Please select save directory first")
+            return
+
+        target_dir = Path(self.main.target_dir)
+        # 如果目录不存在，尝试创建
+        if not target_dir.exists():
+            try:
+                target_dir.mkdir(parents=True, exist_ok=True)
+            except Exception as e:
+                tools.show_error(f"{'无法创建目录' if config.defaulelang == 'zh' else 'Cannot create directory'}: {e}")
+                return
+
+        # 使用跨平台方式打开文件夹
+        import platform
+        import subprocess
+
+        try:
+            system = platform.system()
+            if system == 'Windows':
+                os.startfile(target_dir)
+            elif system == 'Darwin':  # macOS
+                subprocess.run(['open', target_dir])
+            else:  # Linux
+                subprocess.run(['xdg-open', target_dir])
+        except Exception as e:
+            tools.show_error(f"{'打开文件夹失败' if config.defaulelang == 'zh' else 'Failed to open folder'}: {e}")
 
     # 设置或删除代理
     def change_proxy(self, p):
@@ -522,7 +593,7 @@ class WinActionSub:
         role = self.main.voice_role.currentText()
         if not role or role == 'No':
             return tools.show_error(config.transobj['mustberole'], False)
-        voice_dir = tempfile.gettempdir() + '/pyvideotrans'
+        voice_dir = tempfile.gettempdir() + '/BDvideoTrans'
         if not Path(voice_dir).exists():
             Path(voice_dir).mkdir(parents=True, exist_ok=True)
         lujing_role = role.replace('/', '-')

@@ -6,7 +6,8 @@ HearSight配置对话框
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout,
     QLineEdit, QComboBox, QPushButton, QLabel,
-    QGroupBox, QSpinBox, QDoubleSpinBox, QMessageBox
+    QGroupBox, QSpinBox, QDoubleSpinBox, QMessageBox,
+    QScrollArea, QWidget, QTextEdit
 )
 from PySide6.QtCore import Qt, Signal
 from videotrans.configure import config
@@ -21,8 +22,8 @@ class HearSightConfigDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.setWindowTitle("⚙️ HearSight配置")
-        self.resize(750, 650)
+        self.setWindowTitle("⚙️ 智能摘要配置")
+        self.resize(950, 800)
         self.setStyleSheet("""
             QDialog {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
@@ -131,23 +132,60 @@ class HearSightConfigDialog(QDialog):
 
     def init_ui(self):
         """初始化UI"""
-        layout = QVBoxLayout(self)
-        layout.setSpacing(24)
-        layout.setContentsMargins(30, 30, 30, 30)
+        # 主布局
+        main_layout = QVBoxLayout(self)
+        main_layout.setSpacing(0)
+        main_layout.setContentsMargins(0, 0, 0, 0)
 
-        # 顶部标题
-        title_label = QLabel("⚙️ HearSight 配置中心")
+        # 顶部标题（固定不滚动）
+        title_label = QLabel("⚙️ 智能摘要配置中心")
         title_label.setStyleSheet("""
             QLabel {
                 font-size: 20px;
                 font-weight: bold;
                 color: #1a365d;
-                background-color: transparent;
-                padding: 10px 0;
-                margin-bottom: 10px;
+                background-color: #f0f4f8;
+                padding: 20px 30px;
             }
         """)
-        layout.addWidget(title_label)
+        main_layout.addWidget(title_label)
+
+        # 创建滚动区域
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setFrameShape(QScrollArea.NoFrame)
+        scroll_area.setStyleSheet("""
+            QScrollArea {
+                background-color: transparent;
+                border: none;
+            }
+            QScrollBar:vertical {
+                border: none;
+                background: #f0f4f8;
+                width: 12px;
+                margin: 0;
+            }
+            QScrollBar::handle:vertical {
+                background: #cbd5e0;
+                border-radius: 6px;
+                min-height: 30px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background: #a0aec0;
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                height: 0px;
+            }
+        """)
+
+        # 滚动内容容器
+        scroll_content = QWidget()
+        layout = QVBoxLayout(scroll_content)
+        layout.setSpacing(24)
+        layout.setContentsMargins(30, 20, 30, 30)
+
+        scroll_area.setWidget(scroll_content)
+        main_layout.addWidget(scroll_area)
 
         # LLM API配置组
         llm_group = QGroupBox("  🤖  LLM API 配置")
@@ -260,6 +298,133 @@ class HearSightConfigDialog(QDialog):
         merge_group.setLayout(merge_layout)
         layout.addWidget(merge_group)
 
+        # 提示词配置组 ⭐ NEW
+        prompt_group = QGroupBox("  📝  提示词配置")
+        prompt_layout = QFormLayout()
+        prompt_layout.setSpacing(16)
+        prompt_layout.setLabelAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        prompt_layout.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
+
+        # 段落摘要提示词
+        para_prompt_label = QLabel("📄 段落摘要提示词:")
+        para_prompt_label.setStyleSheet("QLabel { color: #2d3748; background-color: transparent; }")
+        self.para_prompt_input = QTextEdit()
+        # 设置默认提示词
+        default_para_prompt = """请用一句话（不超过50字）总结以下内容的核心要点：
+
+{text}
+
+只输出总结内容，不要有任何前缀或后缀。"""
+        self.para_prompt_input.setPlainText(default_para_prompt)
+        self.para_prompt_input.setMaximumHeight(120)
+        self.para_prompt_input.setMinimumWidth(450)
+        prompt_layout.addRow(para_prompt_label, self.para_prompt_input)
+
+        # 整体摘要提示词
+        overall_prompt_label = QLabel("📋 整体摘要提示词:")
+        overall_prompt_label.setStyleSheet("QLabel { color: #2d3748; background-color: transparent; }")
+        self.overall_prompt_input = QTextEdit()
+        # 设置默认提示词
+        default_overall_prompt = """你是一个专业的内容总结助手。请基于以下带时间戳的段落内容，生成一个简洁准确的中文摘要。
+
+要求：
+1. 提炼内容的核心主题（topic）和关键信息
+2. 生成一段简明的中文总结（summary），涵盖主要信息点
+3. 避免流水账和冗余重复
+4. 总结要准确反映原文内容，不要添加原文没有的信息
+5. 输出格式必须是一个JSON对象，包含topic和summary两个字段
+
+输出格式示例：
+{"topic": "主题描述", "summary": "详细总结内容"}
+
+下面是带时间戳的段落内容：
+
+{paragraphs}
+
+请生成JSON格式的摘要（只输出JSON，不要包含任何其他文本）："""
+        self.overall_prompt_input.setPlainText(default_overall_prompt)
+        self.overall_prompt_input.setMaximumHeight(180)
+        self.overall_prompt_input.setMinimumWidth(450)
+        prompt_layout.addRow(overall_prompt_label, self.overall_prompt_input)
+
+        prompt_group.setLayout(prompt_layout)
+        layout.addWidget(prompt_group)
+
+        # 向量化服务配置组
+        vector_group = QGroupBox("  🗄️  向量化服务配置")
+        vector_layout = QFormLayout()
+        vector_layout.setSpacing(16)
+        vector_layout.setLabelAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        vector_layout.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
+
+        # 向量存储类型
+        vector_type_label = QLabel("📦 向量存储类型:")
+        vector_type_label.setStyleSheet("QLabel { color: #2d3748; background-color: transparent; }")
+        self.vector_type_combo = QComboBox()
+        self.vector_type_combo.addItems([
+            "ChromaDB (本地)",
+            "火山引擎向量化服务"
+        ])
+        self.vector_type_combo.setMinimumWidth(350)
+        self.vector_type_combo.currentIndexChanged.connect(self._on_vector_type_changed)
+        vector_layout.addRow(vector_type_label, self.vector_type_combo)
+
+        # 火山引擎配置容器
+        self.volcengine_widget = QGroupBox()
+        volcengine_layout = QFormLayout()
+        volcengine_layout.setSpacing(12)
+        volcengine_layout.setLabelAlignment(Qt.AlignRight | Qt.AlignVCenter)
+
+        # API Key
+        volc_api_key_label = QLabel("🔑 API Key:")
+        volc_api_key_label.setStyleSheet("QLabel { color: #2d3748; background-color: transparent; }")
+        self.volc_api_key_input = QLineEdit()
+        self.volc_api_key_input.setEchoMode(QLineEdit.Password)
+        self.volc_api_key_input.setPlaceholderText("输入火山引擎API密钥")
+        self.volc_api_key_input.setMinimumWidth(350)
+        volcengine_layout.addRow(volc_api_key_label, self.volc_api_key_input)
+
+        # Base URL
+        volc_base_url_label = QLabel("🌐 Base URL:")
+        volc_base_url_label.setStyleSheet("QLabel { color: #2d3748; background-color: transparent; }")
+        self.volc_base_url_input = QLineEdit()
+        self.volc_base_url_input.setPlaceholderText("例如: https://ark.cn-beijing.volces.com/api/v3")
+        self.volc_base_url_input.setText("https://ark.cn-beijing.volces.com/api/v3")
+        self.volc_base_url_input.setMinimumWidth(350)
+        volcengine_layout.addRow(volc_base_url_label, self.volc_base_url_input)
+
+        # Collection Name
+        volc_collection_label = QLabel("📚 Collection名称:")
+        volc_collection_label.setStyleSheet("QLabel { color: #2d3748; background-color: transparent; }")
+        self.volc_collection_input = QLineEdit()
+        self.volc_collection_input.setPlaceholderText("默认: video_summaries")
+        self.volc_collection_input.setText("video_summaries")
+        self.volc_collection_input.setMinimumWidth(350)
+        volcengine_layout.addRow(volc_collection_label, self.volc_collection_input)
+
+        # Embedding Model
+        volc_model_label = QLabel("🤖 Embedding模型:")
+        volc_model_label.setStyleSheet("QLabel { color: #2d3748; background-color: transparent; }")
+        self.volc_model_input = QLineEdit()
+        self.volc_model_input.setPlaceholderText("输入endpoint ID，例如: ep-20241217191853-w54rf")
+        self.volc_model_input.setMinimumWidth(350)
+        volcengine_layout.addRow(volc_model_label, self.volc_model_input)
+
+        self.volcengine_widget.setLayout(volcengine_layout)
+        self.volcengine_widget.setStyleSheet("""
+            QGroupBox {
+                border: 1px solid #d0dae6;
+                border-radius: 8px;
+                margin-top: 8px;
+                padding: 12px;
+                background: white;
+            }
+        """)
+        vector_layout.addRow(self.volcengine_widget)
+
+        vector_group.setLayout(vector_layout)
+        layout.addWidget(vector_group)
+
         # 说明文字
         note_label = QLabel(
             "💡 <b>配置提示</b><br><br>"
@@ -284,9 +449,10 @@ class HearSightConfigDialog(QDialog):
         """)
         layout.addWidget(note_label)
 
-        # 按钮区域
+        # 按钮区域（固定在底部，不滚动）
         button_layout = QHBoxLayout()
         button_layout.setSpacing(12)
+        button_layout.setContentsMargins(30, 15, 30, 20)
 
         self.test_btn = QPushButton("🔌 测试连接")
         self.test_btn.clicked.connect(self.test_connection)
@@ -378,7 +544,16 @@ class HearSightConfigDialog(QDialog):
         button_layout.addWidget(self.save_btn)
         button_layout.addWidget(self.cancel_btn)
 
-        layout.addLayout(button_layout)
+        # 按钮添加到主布局（在滚动区域外，固定在底部）
+        main_layout.addLayout(button_layout)
+
+        # 初始化时隐藏火山引擎配置
+        self._on_vector_type_changed(0)
+
+    def _on_vector_type_changed(self, index):
+        """向量存储类型改变时的处理"""
+        # index 0: ChromaDB, 1: 火山引擎
+        self.volcengine_widget.setVisible(index == 1)
 
     def load_config(self):
         """加载配置"""
@@ -405,6 +580,34 @@ class HearSightConfigDialog(QDialog):
                 self.max_duration_spin.setValue(merge_cfg.get('max_duration', 30.0))
                 self.max_chars_spin.setValue(merge_cfg.get('max_chars', 200))
 
+            # 提示词配置（仅当有自定义值时才覆盖默认值）
+            prompt_cfg = hearsight_cfg.get('prompts', {})
+            if prompt_cfg:
+                para_prompt = prompt_cfg.get('paragraph', '').strip()
+                if para_prompt:
+                    self.para_prompt_input.setPlainText(para_prompt)
+
+                overall_prompt = prompt_cfg.get('overall', '').strip()
+                if overall_prompt:
+                    self.overall_prompt_input.setPlainText(overall_prompt)
+
+            # 向量化配置
+            vector_cfg = hearsight_cfg.get('vector', {})
+            if vector_cfg:
+                vector_type = vector_cfg.get('type', 'chromadb')
+                if vector_type == 'volcengine':
+                    self.vector_type_combo.setCurrentIndex(1)
+                else:
+                    self.vector_type_combo.setCurrentIndex(0)
+
+                # 火山引擎配置
+                volc_cfg = vector_cfg.get('volcengine', {})
+                if volc_cfg:
+                    self.volc_api_key_input.setText(volc_cfg.get('api_key', ''))
+                    self.volc_base_url_input.setText(volc_cfg.get('base_url', 'https://ark.cn-beijing.volces.com/api/v3'))
+                    self.volc_collection_input.setText(volc_cfg.get('collection_name', 'video_summaries'))
+                    self.volc_model_input.setText(volc_cfg.get('embedding_model', ''))
+
         except Exception as e:
             print(f"加载HearSight配置失败: {e}")
 
@@ -427,6 +630,14 @@ class HearSightConfigDialog(QDialog):
             QMessageBox.warning(self, "警告", "请输入Model")
             return
 
+        # 向量化服务验证
+        vector_type_index = self.vector_type_combo.currentIndex()
+        if vector_type_index == 1:  # 火山引擎
+            volc_api_key = self.volc_api_key_input.text().strip()
+            if not volc_api_key:
+                QMessageBox.warning(self, "警告", "请输入火山引擎API Key")
+                return
+
         # 构建配置
         hearsight_cfg = {
             'llm': {
@@ -440,6 +651,19 @@ class HearSightConfigDialog(QDialog):
                 'max_gap': self.max_gap_spin.value(),
                 'max_duration': self.max_duration_spin.value(),
                 'max_chars': self.max_chars_spin.value()
+            },
+            'prompts': {
+                'paragraph': self.para_prompt_input.toPlainText().strip(),
+                'overall': self.overall_prompt_input.toPlainText().strip()
+            },
+            'vector': {
+                'type': 'volcengine' if vector_type_index == 1 else 'chromadb',
+                'volcengine': {
+                    'api_key': self.volc_api_key_input.text().strip(),
+                    'base_url': self.volc_base_url_input.text().strip(),
+                    'collection_name': self.volc_collection_input.text().strip(),
+                    'embedding_model': self.volc_model_input.text().strip()
+                }
             }
         }
 
@@ -471,12 +695,16 @@ class HearSightConfigDialog(QDialog):
             QMessageBox.warning(self, "警告", "请先填写完整的API配置")
             return
 
+        # 检查是否也要测试向量化服务
+        vector_type_index = self.vector_type_combo.currentIndex()
+        test_vector = (vector_type_index == 1)  # 火山引擎
+
         try:
-            # 测试调用
+            # 测试LLM连接
             from videotrans.hearsight.chat_client import chat_simple
 
             self.test_btn.setEnabled(False)
-            self.test_btn.setText("测试中...")
+            self.test_btn.setText("测试LLM中...")
 
             response = chat_simple(
                 prompt="请用一句话回复：你好",
@@ -486,22 +714,51 @@ class HearSightConfigDialog(QDialog):
                 timeout=30
             )
 
+            llm_result = f"✅ LLM连接正常\n\n模型响应：{response[:100]}"
+
+            # 测试向量化服务
+            if test_vector:
+                volc_api_key = self.volc_api_key_input.text().strip()
+                volc_base_url = self.volc_base_url_input.text().strip()
+                volc_model = self.volc_model_input.text().strip()
+
+                if not volc_api_key or not volc_base_url or not volc_model:
+                    QMessageBox.warning(self, "警告", "请先填写完整的火山引擎向量化配置")
+                    return
+
+                self.test_btn.setText("测试向量化...")
+
+                from videotrans.hearsight.volcengine_vector import VolcengineVectorClient
+
+                volc_client = VolcengineVectorClient(
+                    api_key=volc_api_key,
+                    base_url=volc_base_url,
+                    embedding_model=volc_model
+                )
+
+                if volc_client.test_connection():
+                    vector_result = "\n\n✅ 火山引擎向量化服务连接正常"
+                else:
+                    vector_result = "\n\n❌ 火山引擎向量化服务连接失败"
+
+                llm_result += vector_result
+
             QMessageBox.information(
                 self,
-                "测试成功",
-                f"API连接正常！\n\n模型响应：{response[:100]}"
+                "测试完成",
+                llm_result
             )
 
         except Exception as e:
             QMessageBox.critical(
                 self,
                 "测试失败",
-                f"API连接失败：\n{str(e)}"
+                f"连接测试失败：\n{str(e)}"
             )
 
         finally:
             self.test_btn.setEnabled(True)
-            self.test_btn.setText("测试连接")
+            self.test_btn.setText("🔌 测试连接")
 
     def get_config(self) -> dict:
         """获取当前配置"""

@@ -114,7 +114,7 @@ def speech_to_text(model_name='large-v2',language="auto",prompt=None,audio_file=
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(prog='视频翻译pyVideoTrans', description='')
+    parser = argparse.ArgumentParser(prog='视频翻译BDvideoTrans', description='')
 
     parser.add_argument('-m', '--model', default='large-v2', type=str, choices=['tiny','tiny.en','base','base.en','small','small.en','medium', 'medium.en', 'large-v1', 'large-v2', 'large-v3', 'large-v3-turbo'], help='选择使用哪个模型')
 

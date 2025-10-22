@@ -39,7 +39,7 @@ class Ui_separateform(object):
         # 开始分离
         self.showtips.setObjectName("showtips")
         self.showtips.setText(
-            "如果文件过大，或频繁分离出错，建议选择独立分离工具，比如uvr5或vocal-separate\ngithub.com/Anjok07/ultimatevocalremovergui/releases\ngithub.com/jianchang512/vocal-separate/releases")
+            "如果文件过大，或频繁分离出错，建议选择独立分离工具，比如uvr5或vocal-separate")
 
         self.set = QtWidgets.QPushButton(separateform)
         self.set.setGeometry(QtCore.QRect(170, 200, 141, 35))

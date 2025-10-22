@@ -526,12 +526,14 @@ class SummaryViewerWidget(QWidget):
         # 顶部工具栏
         toolbar = QHBoxLayout()
 
-        title_label = QLabel("📝 HearSight - 智能摘要")
+        title_label = QLabel("📝 智能摘要")
         title_label.setStyleSheet("""
             font-size: 18px;
             font-weight: bold;
-            color: #2c3e50;
-            padding: 5px;
+            color: #E6E8EB;
+            padding: 10px 15px;
+            background-color: #2A2F3A;
+            border-radius: 8px;
         """)
         toolbar.addWidget(title_label)
         toolbar.addStretch()
@@ -540,7 +542,8 @@ class SummaryViewerWidget(QWidget):
         back_btn = QPushButton("← 返回主界面")
         back_btn.setStyleSheet("""
             QPushButton {
-                background-color: #6c757d;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #6c757d, stop:1 #5a6268);
                 color: white;
                 border: none;
                 padding: 8px 16px;
@@ -548,7 +551,12 @@ class SummaryViewerWidget(QWidget):
                 font-size: 13px;
             }
             QPushButton:hover {
-                background-color: #5a6268;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #7c8a99, stop:1 #6c757d);
+            }
+            QPushButton:pressed {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #5a6268, stop:1 #4a5258);
             }
         """)
         back_btn.clicked.connect(self.return_to_main)
@@ -562,8 +570,8 @@ class SummaryViewerWidget(QWidget):
             font-size: 16px;
             font-weight: bold;
             padding: 12px 15px;
-            color: #2c3e50;
-            background-color: white;
+            color: #E6E8EB;
+            background-color: #2A2F3A;
             border-radius: 8px 8px 0 0;
         """)
         layout.addWidget(summary_label)
@@ -574,12 +582,13 @@ class SummaryViewerWidget(QWidget):
         self.summary_text.setStyleSheet("""
             QTextEdit {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #ffffff, stop:1 #f0f8ff);
-                border: 2px solid #d6e9f5;
+                    stop:0 #2A2F3A, stop:1 #1F2430);
+                border: 2px solid #3A4250;
                 border-radius: 0 0 10px 10px;
                 padding: 18px;
                 font-size: 14px;
                 line-height: 1.6;
+                color: #E6E8EB;
             }
         """)
         layout.addWidget(self.summary_text)
@@ -598,8 +607,8 @@ class SummaryViewerWidget(QWidget):
             font-size: 15px;
             font-weight: bold;
             padding: 10px 12px;
-            color: #2c3e50;
-            background-color: white;
+            color: #E6E8EB;
+            background-color: #2A2F3A;
             border-radius: 8px 8px 0 0;
         """)
         left_layout.addWidget(para_label)
@@ -607,22 +616,22 @@ class SummaryViewerWidget(QWidget):
         self.paragraph_list = QListWidget()
         self.paragraph_list.setStyleSheet("""
             QListWidget {
-                border: 2px solid #e8ecef;
+                border: 2px solid #3A4250;
                 border-radius: 0 0 10px 10px;
-                background-color: white;
+                background-color: #1F2430;
                 outline: none;
             }
             QListWidget::item {
                 padding: 14px 12px;
-                border-bottom: 1px solid #f0f3f5;
-                color: #495057;
+                border-bottom: 1px solid #2A2F3A;
+                color: #E6E8EB;
                 font-size: 13px;
             }
             QListWidget::item:hover {
-                background-color: #e3f2fd;
+                background-color: #2A3F5F;
             }
             QListWidget::item:selected {
-                background-color: #2196f3;
+                background-color: #4A6FA5;
                 color: white;
             }
         """)
@@ -641,8 +650,8 @@ class SummaryViewerWidget(QWidget):
             font-size: 15px;
             font-weight: bold;
             padding: 10px 12px;
-            color: #2c3e50;
-            background-color: white;
+            color: #E6E8EB;
+            background-color: #2A2F3A;
             border-radius: 8px 8px 0 0;
         """)
         right_layout.addWidget(detail_label)
@@ -651,12 +660,13 @@ class SummaryViewerWidget(QWidget):
         self.detail_text.setReadOnly(True)
         self.detail_text.setStyleSheet("""
             QTextEdit {
-                border: 2px solid #e8ecef;
+                border: 2px solid #3A4250;
                 border-radius: 0 0 10px 10px;
-                background-color: white;
+                background-color: #1F2430;
                 padding: 15px;
                 font-size: 13px;
                 line-height: 1.8;
+                color: #E6E8EB;
             }
         """)
         right_layout.addWidget(self.detail_text)
@@ -674,7 +684,8 @@ class SummaryViewerWidget(QWidget):
         export_btn = QPushButton("💾 导出摘要")
         export_btn.setStyleSheet("""
             QPushButton {
-                background-color: #28a745;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #34ce57, stop:1 #28a745);
                 color: white;
                 border: none;
                 padding: 10px 20px;
@@ -682,7 +693,12 @@ class SummaryViewerWidget(QWidget):
                 font-size: 14px;
             }
             QPushButton:hover {
-                background-color: #218838;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #40d967, stop:1 #2dbd4e);
+            }
+            QPushButton:pressed {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #218838, stop:1 #1e7e34);
             }
         """)
         export_btn.clicked.connect(self.export_summary)
@@ -697,11 +713,11 @@ class SummaryViewerWidget(QWidget):
 
         # 显示总摘要
         summary_html = f"""
-        <div style="line-height: 1.8;">
+        <div style="line-height: 1.8; color: #E6E8EB;">
             <p style="margin: 0 0 10px 0;"><strong>📊 总时长：</strong>{summary.get('total_duration', 'N/A')}</p>
             <p style="margin: 0 0 10px 0;"><strong>📝 段落数：</strong>{summary.get('paragraph_count', 0)}</p>
             <p style="margin: 10px 0;"><strong>💡 内容概要：</strong></p>
-            <p style="margin: 0; color: #495057;">{summary.get('overall_summary', '暂无摘要')}</p>
+            <p style="margin: 0; color: #A0ABC0;">{summary.get('overall_summary', '暂无摘要')}</p>
         </div>
         """
         self.summary_text.setHtml(summary_html)
@@ -731,18 +747,18 @@ class SummaryViewerWidget(QWidget):
 
         # 构建详情HTML
         detail_html = f"""
-        <div style="line-height: 2.0;">
-            <h3 style="color: #2196f3; margin-top: 0;">段落 {index + 1}</h3>
+        <div style="line-height: 2.0; color: #E6E8EB;">
+            <h3 style="color: #6AB9FF; margin-top: 0;">段落 {index + 1}</h3>
             <p><strong>⏱️ 时间范围：</strong>{para.get('start_time', '')} - {para.get('end_time', '')}</p>
             <p><strong>⏳ 时长：</strong>{para.get('duration', 'N/A')}</p>
 
-            <h4 style="color: #ff9800; margin-top: 20px;">📝 段落摘要</h4>
-            <p style="background-color: #fff3e0; padding: 12px; border-left: 4px solid #ff9800; border-radius: 4px;">
+            <h4 style="color: #FFA726; margin-top: 20px;">📝 段落摘要</h4>
+            <p style="background-color: #2A2F3A; padding: 12px; border-left: 4px solid #FFA726; border-radius: 4px; color: #E6E8EB;">
                 {para.get('summary', '暂无摘要')}
             </p>
 
-            <h4 style="color: #4caf50; margin-top: 20px;">📄 原文内容</h4>
-            <div style="background-color: #f1f8e9; padding: 12px; border-left: 4px solid #4caf50; border-radius: 4px;">
+            <h4 style="color: #66BB6A; margin-top: 20px;">📄 原文内容</h4>
+            <div style="background-color: #2A2F3A; padding: 12px; border-left: 4px solid #66BB6A; border-radius: 4px; color: #A0ABC0;">
                 {para.get('text', '').replace(chr(10), '<br>')}
             </div>
         </div>
@@ -798,11 +814,34 @@ class SummaryViewerWidget(QWidget):
 
     def return_to_main(self):
         """返回主界面"""
-        # 获取父窗口的_central_stack并切换回主界面
+        # 获取主窗口（需要向上查找，因为直接父对象可能是 QStackedWidget）
+        from PySide6.QtWidgets import QMainWindow
+
+        main_window = None
         parent = self.parent()
-        if parent and hasattr(parent, '_central_stack'):
-            # 切换到第一个widget（通常是主界面）
-            parent._central_stack.setCurrentIndex(0)
-        elif parent and hasattr(parent, 'centralwidget'):
-            parent._central_stack.setCurrentWidget(parent.centralwidget)
+
+        # 向上查找主窗口
+        while parent:
+            if isinstance(parent, QMainWindow):
+                main_window = parent
+                break
+            parent = parent.parent()
+
+        if not main_window:
+            return
+
+        # 现在使用主窗口的 _central_stack
+        if hasattr(main_window, '_central_stack') and main_window._central_stack:
+            # 检查是否启用了 HTML UI
+            if hasattr(main_window, 'html_view') and main_window.html_view is not None:
+                # 如果 HTML UI 存在，切换到 HTML UI
+                html_index = main_window._central_stack.indexOf(main_window.html_view)
+                if html_index >= 0:
+                    main_window._central_stack.setCurrentIndex(html_index)
+                else:
+                    # HTML UI 不在 stack 中，切换到第一个（Qt UI）
+                    main_window._central_stack.setCurrentIndex(0)
+            else:
+                # 没有 HTML UI，切换到第一个widget（Qt UI）
+                main_window._central_stack.setCurrentIndex(0)
 

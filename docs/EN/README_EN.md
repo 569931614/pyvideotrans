@@ -2,7 +2,7 @@
 
 ---
 
-[Discord invitation link](https://discord.gg/y9gUweVCCJ)
+
 
 ---
 
@@ -15,7 +15,7 @@
 >
 > Text translation supports `Microsoft Translator|Google Translate|Baidu Translate|Tencent Translate|ChatGPT|AzureAI|Gemini|DeepL|DeepLX|Offline Translation OTT`
 >
-> Text-to-speech synthesis supports `Microsoft Edge tts`, `Google tts`, `Azure AI TTS`, `Openai TTS`, `Elevenlabs TTS`, `Custom TTS server API`, `GPT-SoVITS`, [clone-voice](https://github.com/jianchang512/clone-voice), `[ChatTTS-ui](https://github.com/jianchang512/ChatTTS-ui)`  [Fish TTS](https://github.com/fishaudio/fish-speech) [CosyVoice](https://github.com/FunAudioLLM/CosyVoice)
+> Text-to-speech synthesis supports `Microsoft Edge tts`, `Google tts`, `Azure AI TTS`, `Openai TTS`, `Elevenlabs TTS`, `Custom TTS server API`, `GPT-SoVITS`, `clone-voice`, `ChatTTS-ui`, `Fish TTS`, `CosyVoice`
 >
 > Allows for the retention of background accompaniment music, etc. (based on uvr5)
 >
@@ -39,14 +39,12 @@
 
 ----
 
-https://github.com/jianchang512/pyvideotrans/assets/3378335/3811217a-26c8-4084-ba24-7a95d2e13d58
-
 
 # Pre-packaged Version (Only for win10/win11, MacOS/Linux use source code deployment)
 
 > Packaged using pyinstaller, not made undetectable and unsigned, antivirus may alert, please add to the whitelist or deploy using the source code
 
-0. [Click to download the pre-packaged version, unzip to an English directory without spaces, then double-click sp.exe](https://github.com/jianchang512/pyvideotrans/releases)
+0. Download the pre-packaged version, unzip to an English directory without spaces, then double-click sp.exe
 
 1. Unzip to an English path and make sure the path does not contain spaces. After unzipping, double-click sp.exe (If encountering permission issues, right-click to open as administrator)
 
@@ -58,8 +56,6 @@ https://github.com/jianchang512/pyvideotrans/assets/3378335/3811217a-26c8-4084-b
 0. Open a terminal window and execute the following commands one by one
 
     > Make sure you have installed Homebrew before executing. If you have not installed Homebrew, you need to install it first.
-    >
-    > Execute the command to install Homebrew: `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
     >
     > After installation, execute: `eval $(brew --config)`
     >
@@ -88,8 +84,8 @@ https://github.com/jianchang512/pyvideotrans/assets/3378335/3811217a-26c8-4084-b
 
 
 1. Create a folder without spaces or Chinese characters, then navigate to that folder in the terminal.
-2. In the terminal, execute `git clone https://github.com/jianchang512/pyvideotrans `
-3. Execute `cd pyvideotrans`
+2. Extract or clone the BDvideoTrans source code
+3. Execute `cd BDvideoTrans`
 4. Continue with `python -m venv venv`
 5. Execute `source ./venv/bin/activate` and ensure the terminal prompt begins with `(venv)`, following commands must ensure the terminal prompt starts with `(venv)`
 6. Execute `pip install -r requirements.txt`
@@ -100,7 +96,7 @@ https://github.com/jianchang512/pyvideotrans/assets/3378335/3811217a-26c8-4084-b
 7. `python sp.py` to open the software interface
 
 
-[Detailed Deployment Scheme for Mac](https://pyvideotrans.com/mac.html)
+[Detailed Deployment Scheme for Mac](https://BDvideoTrans.com/mac.html)
 
 # Linux Source Code Deployment
 
@@ -150,12 +146,7 @@ apt install python3.10
 
 curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10
 
-<<<<<<< HEAD
 sudo update-alternatives --install /usr/bin/python python /usr/local/bin/python3.10  1
-=======
-
-sudo update-alternatives --install /usr/bin/python python /usr/local/bin/python3.10 
->>>>>>> 9485b1096d6a40a3fb6962a49df128397f10bdd5
 
 sudo update-alternatives --config python
 
@@ -168,8 +159,8 @@ apt-get install ffmpeg
 
 
 1. Create a folder without spaces or Chinese characters, then navigate to that folder from the terminal.
-3. In the terminal, execute `git clone https://github.com/jianchang512/pyvideotrans`
-4. Continue with `cd pyvideotrans`
+3. Extract or clone the BDvideoTrans source code
+4. Continue with `cd BDvideoTrans`
 5. Execute `python -m venv venv`
 6. Continue with `source ./venv/bin/activate`, ensure the command line prompt has changed to start with `(venv)`, otherwise, it indicates an error.
 7. Execute `pip install -r requirements.txt`, if failure occurs, execute the following 2 commands to switch the pip mirror to Alibaba.
@@ -203,13 +194,12 @@ apt-get install ffmpeg
 
    **Open a cmd, execute `python -V`, if the output is not `3.10.4`, it indicates an installation error or "Add to PATH" was not selected, please reinstall**
 
-1. Open https://github.com/git-for-windows/git/releases/download/v2.45.0.windows.1/Git-2.45.0-64-bit.exe, download Git, double-click and proceed with the installation steps.
-2. Find a folder without spaces or Chinese characters, enter `cmd` in the address bar and press enter to open the terminal, all the following commands must be executed in this terminal.
-3. Execute `git clone https://github.com/jianchang512/pyvideotrans`
-4. Continue with `cd pyvideotrans`
-5. Execute `python -m venv venv`
-6. Continue with `.\venv\scripts\activate`, after execution check and confirm that the command line has changed to start with `(venv)`, otherwise, it indicates an error.
-7. Execute `pip install -r requirements.txt `, if failure occurs, execute the following 2 commands to switch the pip mirror to Alibaba
+1. Find a folder without spaces or Chinese characters, enter `cmd` in the address bar and press enter to open the terminal, all the following commands must be executed in this terminal.
+2. Extract or clone the BDvideoTrans source code
+3. Continue with `cd BDvideoTrans`
+4. Execute `python -m venv venv`
+5. Continue with `.\venv\scripts\activate`, after execution check and confirm that the command line has changed to start with `(venv)`, otherwise, it indicates an error.
+6. Execute `pip install -r requirements.txt `, if failure occurs, execute the following 2 commands to switch the pip mirror to Alibaba
 
     ```
 
@@ -226,7 +216,7 @@ apt-get install ffmpeg
     `pip install torch==2.2.0 torchaudio==2.2.0 --index-url https://download.pytorch.org/whl/cu118`
 
 
-9. For Windows, to enable CUDA acceleration, an Nvidia graphics card is required, and the CUDA11.8+ environment must be properly set up. See [CUDA Acceleration Support](https://pyvideotrans.com/gpu.html) for installation details.
+9. For Windows, to enable CUDA acceleration, an Nvidia graphics card is required, and the CUDA11.8+ environment must be properly set up. See [CUDA Acceleration Support](https://BDvideoTrans.com/gpu.html) for installation details.
 
 10. Unzip ffmpeg.zip to the current source code directory, prompt to overwrite if asked, make sure the ffmpeg folder under the source code directory contains ffmpeg.exe ffprobe.exe ytwin32.exe,
 
@@ -253,14 +243,14 @@ pip install ctranslate2==3.24.0
 
 # User Guide and Documentation
 
-Please visit https://pyvideotrans.com/guide.html
+Please visit https://BDvideoTrans.com/guide.html
 
 
 # Speech Recognition Models:
 
-   Download link: https://pyvideotrans.com/model.html
+   Download link: https://BDvideoTrans.com/model.html
 
-   Model descriptions and differences: https://pyvideotrans.com/02.html
+   Model descriptions and differences: https://BDvideoTrans.com/02.html
 
 
 
@@ -275,34 +265,16 @@ Please visit https://pyvideotrans.com/guide.html
 
 # Software Preview Screenshot
 
-![image](https://github.com/jianchang512/pyvideotrans/assets/3378335/c3abb561-1ab5-47f9-bfdc-609245445190)
-
-
-
-# Related Projects
-
-[OTT: Local Offline Text Translation Tool](https://github.com/jianchang512/ott)
-
-[Voice Clone Tool: Synthesizing Speech with Any Voice](https://github.com/jianchang512/clone-voice)
-
-[Speech Recognition Tool: Local Offline Speech-to-Text Tool](https://github.com/jianchang512/stt)
-
-[Vocal and Background Music Separation Tool](https://github.com/jianchang512/vocal-separate)
-
-[Improved version of api.py for GPT-SoVITS](https://github.com/jianchang512/gptsovits-api)
-
-[  CosyVoice   api.py](https://github.com/jianchang512/cosyvoice-api)
-
 ## Acknowledgments
 
 > This program mainly relies on several open-source projects
 
-1. [ffmpeg](https://github.com/FFmpeg/FFmpeg)
-2. [PySide6](https://pypi.org/project/PySide6/)
-3. [edge-tts](https://github.com/rany2/edge-tts)
-4. [faster-whisper](https://github.com/SYSTRAN/faster-whisper)
-5. [openai-whisper](https://github.com/openai/whisper)
-6. [pydub](https://github.com/jiaaro/pydub)
+1. ffmpeg
+2. PySide6
+3. edge-tts
+4. faster-whisper
+5. openai-whisper
+6. pydub
 
 
 

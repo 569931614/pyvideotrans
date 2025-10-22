@@ -58,6 +58,16 @@ async function bootstrap() {
     populateSplit(opts.splitTypes, opts.selected.split_type);
     populateSelect('tts-type', opts.ttsTypes, opts.selected.tts_type);
     populateSelect('subtitle-type', opts.subtitleTypes, opts.selected.subtitle_type);
+
+    // Populate voice role select
+    const voiceRoles = opts.voiceRoles || [];
+    if (voiceRoles.length > 0) {
+      const defaultRole = opts.selected.voice_role || (voiceRoles[0] ? voiceRoles[0].value : 'No');
+      populateSelect('voice-role', voiceRoles, defaultRole);
+    } else {
+      populateSelect('voice-role', [{ value: 'No', label: 'No' }], 'No');
+    }
+
     console.log('下拉选项填充完成');
 
     // Bind select events AFTER they are created
@@ -69,15 +79,17 @@ async function bootstrap() {
   console.log('绑定设置按钮事件完成');
 
     // Set text input values
-    const voiceRoleEl = document.getElementById('voice-role');
     const voiceRateEl = document.getElementById('voice-rate');
     const volumeEl = document.getElementById('volume');
     const pitchEl = document.getElementById('pitch');
+    const trimStartEl = document.getElementById('trim-start');
+    const trimEndEl = document.getElementById('trim-end');
 
-    if (voiceRoleEl) voiceRoleEl.value = opts.selected.voice_role || '';
     if (voiceRateEl) voiceRateEl.value = opts.selected.voice_rate || 0;
     if (volumeEl) volumeEl.value = opts.selected.volume || 0;
     if (pitchEl) pitchEl.value = opts.selected.pitch || 0;
+    if (trimStartEl) trimStartEl.value = opts.selected.trim_start || 0;
+    if (trimEndEl) trimEndEl.value = opts.selected.trim_end || 0;
 
     // Set checkbox values
     const checkboxes = [
@@ -85,6 +97,7 @@ async function bootstrap() {
       { id: 'video-autorate', key: 'video_autorate' },
       { id: 'enable-cuda', key: 'enable_cuda' },
       { id: 'enable-hearsight', key: 'enable_hearsight' },
+      { id: 'enable-preprocess', key: 'enable_preprocess' },
       { id: 'aisendsrt', key: 'aisendsrt' },
       { id: 'remove-noise', key: 'remove_noise' }
     ];
@@ -106,13 +119,19 @@ function setupHandlers() {
   console.log('设置基础事件处理器...');
 
   document.getElementById('btn-select-video').addEventListener('click', async () => {
-    const files = await bridge.selectVideo();
-    selectedVideos = files || [];
+    const result = await bridge.selectVideo();
+    selectedVideos = result.files || [];
     updateTaskQueue();
     const count = selectedVideos.length;
     document.getElementById('video-count').innerText = count > 0
       ? `已选择 ${count} 个文件`
       : '未选择视频';
+
+    // 更新保存目录显示
+    if (result.target_dir) {
+      document.getElementById('save-dir').innerText = result.target_dir;
+    }
+
     if (count > 0) {
       showNotification(`已选择 ${count} 个视频`, 'success');
     }
@@ -126,6 +145,26 @@ function setupHandlers() {
     }
   });
 
+  // 点击保存目录路径直接打开文件夹
+  document.getElementById('save-dir').addEventListener('click', async () => {
+    const saveDirText = document.getElementById('save-dir').innerText;
+    if (saveDirText === '未选择' || !saveDirText) {
+      showNotification('请先选择保存目录', 'info');
+      return;
+    }
+
+    try {
+      const result = await bridge.openSaveDir();
+      if (result.success) {
+        showNotification('已打开文件夹', 'success');
+      } else {
+        showNotification(result.message || '打开文件夹失败', 'error');
+      }
+    } catch (e) {
+      showNotification('打开文件夹失败: ' + e.message, 'error');
+    }
+  });
+
   document.getElementById('proxy').addEventListener('change', (e) => {
     bridge.setParams({ proxy: e.target.value || '' });
   });
@@ -134,18 +173,42 @@ function setupHandlers() {
     const btn = document.getElementById('btn-start');
     btn.disabled = true;
     btn.textContent = '处理中...';
+
     try {
+      // 在开始任务前，确保读取并保存trim_start和trim_end的当前值
+      const trimStartEl = document.getElementById('trim-start');
+      const trimEndEl = document.getElementById('trim-end');
+      if (trimStartEl) {
+        const trimStartValue = parseFloat(trimStartEl.value || '0');
+        await bridge.setParams({ trim_start: trimStartValue });
+        console.log('[DEBUG] Set trim_start:', trimStartValue);
+      }
+      if (trimEndEl) {
+        const trimEndValue = parseFloat(trimEndEl.value || '0');
+        await bridge.setParams({ trim_end: trimEndValue });
+        console.log('[DEBUG] Set trim_end:', trimEndValue);
+      }
+
+      // 等待50ms确保参数已保存
+      await new Promise(resolve => setTimeout(resolve, 50));
+
       const result = await bridge.startTranslate();
+      console.log('startTranslate result:', result);
       if (result && result.success) {
         // Update taskUuidMap with returned UUIDs
         if (result.task_uuids && Array.isArray(result.task_uuids)) {
+          console.log('Received task_uuids:', result.task_uuids);
+          console.log('Current selectedVideos:', selectedVideos);
           result.task_uuids.forEach(item => {
+            console.log(`Mapping path "${item.path}" to UUID "${item.uuid}"`);
             taskUuidMap[item.path] = item.uuid;
           });
           console.log('Task UUIDs updated:', taskUuidMap);
 
           // Rebuild task queue with UUIDs
           updateTaskQueue();
+        } else {
+          console.warn('No task_uuids in result or not an array');
         }
 
         showNotification('处理已启动', 'success');
@@ -164,16 +227,11 @@ function setupHandlers() {
   });
 
   // Bind input fields
-  const voiceRole = document.getElementById('voice-role');
   const voiceRate = document.getElementById('voice-rate');
   const volume = document.getElementById('volume');
   const pitch = document.getElementById('pitch');
-
-  if (voiceRole) {
-    voiceRole.addEventListener('change', (e) => {
-      bridge.setParams({ voice_role: e.target.value });
-    });
-  }
+  const trimStart = document.getElementById('trim-start');
+  const trimEnd = document.getElementById('trim-end');
 
   if (voiceRate) {
     voiceRate.addEventListener('change', (e) => {
@@ -193,13 +251,26 @@ function setupHandlers() {
     });
   }
 
+  if (trimStart) {
+    trimStart.addEventListener('change', (e) => {
+      bridge.setParams({ trim_start: parseFloat(e.target.value || '0') });
+    });
+  }
+
+  if (trimEnd) {
+    trimEnd.addEventListener('change', (e) => {
+      bridge.setParams({ trim_end: parseFloat(e.target.value || '0') });
+    });
+  }
+
   // Bind checkboxes
-  const checkboxIds = ['voice-autorate', 'video-autorate', 'enable-cuda', 'enable-hearsight', 'aisendsrt', 'remove-noise'];
+  const checkboxIds = ['voice-autorate', 'video-autorate', 'enable-cuda', 'enable-hearsight', 'enable-preprocess', 'aisendsrt', 'remove-noise'];
   const checkboxKeys = {
     'voice-autorate': 'voice_autorate',
     'video-autorate': 'video_autorate',
     'enable-cuda': 'cuda',
     'enable-hearsight': 'enable_hearsight',
+    'enable-preprocess': 'enable_preprocess',
     'aisendsrt': 'aisendsrt',
     'remove-noise': 'remove_noise'
   };
@@ -229,6 +300,7 @@ function bindSelectEvents() {
   });
   bindSelect('tts-type', 'tts_type', (v) => parseInt(v, 10));
   bindSelect('subtitle-type', 'subtitle_type', (v) => parseInt(v, 10));
+  bindSelect('voice-role', 'voice_role');
 
   const modelName = document.getElementById('model-name');
   if (modelName) {
@@ -482,6 +554,23 @@ function bindSettingsButtons() {
       }
     });
   }
+
+  // 智能摘要配置按钮
+  const hearsightConfigBtn = document.getElementById('btn-hearsight-config');
+  if (hearsightConfigBtn) {
+    hearsightConfigBtn.addEventListener('click', async () => {
+      try {
+        const result = await bridge.openHearSightConfig();
+        if (result.success) {
+          showNotification('已打开智能摘要配置', 'success');
+        } else {
+          showNotification(result.message || '打开配置失败', 'error');
+        }
+      } catch (e) {
+        showNotification('打开配置失败: ' + e.message, 'error');
+      }
+    });
+  }
 }
 
 // ========== Notification System ==========
@@ -504,6 +593,7 @@ function updateTaskQueue() {
   listDiv.innerHTML = selectedVideos.map((filePath, index) => {
     const fileName = filePath.split(/[/\\]/).pop();
     const uuid = taskUuidMap[filePath] || null;
+    console.log(`Building task item for path "${filePath}", UUID: "${uuid}"`);
 
     return `
       <div class="task-item" data-index="${index}" data-uuid="${uuid || ''}" data-path="${filePath}">
@@ -625,6 +715,18 @@ function updateTaskProgress(progressData) {
       if (allCompleted) {
         stopProgressPolling();
         showNotification('所有任务已完成', 'success');
+
+        // 清除任务队列和 UUID 映射，允许重新添加相同的视频
+        setTimeout(() => {
+          selectedVideos = [];
+          taskUuidMap = {};
+          updateTaskQueue();
+
+          // 通知后端重置状态
+          if (bridge && bridge.resetStatus) {
+            bridge.resetStatus();
+          }
+        }, 2000); // 2秒后清除，给用户时间查看完成状态
       }
     }
   });

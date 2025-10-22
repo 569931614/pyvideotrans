@@ -2,7 +2,7 @@ BDvideoTrans
 
 # BDvideoTrans
 
-这是一个视频翻译配音工具，可将一种语言的视频翻译为指定语言的视频，自动生成和添加该语言的字幕和配音。并支持API调用(v3.0以下版本，以上久未更新)
+这是一个视频翻译配音工具，可将一种语言的视频翻译为指定语言的视频，自动生成和添加该语言的字幕和配音。
 
 
 语音识别支持 `faster-whisper/openai-whisper/OpenAI API/Deepgram.com/Gemini/Parakeet/GoogleSpeech/阿里Funasr/字节火山等`，并支持自定义语音识别api.
@@ -93,7 +93,7 @@ BDvideoTrans
 
 
 1. 创建不含空格和中文的文件夹，在终端中进入该文件夹。
-2. 执行命令 `cd pyvideotrans`
+2. 执行命令 `cd BDvideoTrans`
 3. 继续执行 `python -m venv venv`
 5. 继续执行命令 `source ./venv/bin/activate`，执行完毕查看确认终端命令提示符已变成已`(venv)`开头,以下命令必须确定终端提示符是以`(venv)`开头
 6. 执行 `pip install -r requirements.txt `，如果提示失败，执行如下2条命令切换pip镜像到阿里镜像
@@ -171,7 +171,7 @@ apt-get install ffmpeg
 
 
 1. 创建个不含空格和中文的文件夹， 从终端打开该文件夹。
-2. 继续执行命令 `cd pyvideotrans`
+2. 继续执行命令 `cd BDvideoTrans`
 3. 继续执行 `python -m venv venv`
 6. 继续执行命令 `source .\venv\scripts\activate`，执行完毕查看确认终端命令提示符已变成已`(venv)`开头,以下命令必须确定终端提示符是以`(venv)`开头
 7. 执行 `pip install -r requirements.txt`，如果提示失败，执行如下2条命令切换pip镜像到阿里镜像
@@ -205,7 +205,7 @@ apt-get install ffmpeg
    **打开一个cmd，执行 `python -V`，如果输出不是 `3.10.4`,说明安装出错，或没有加入 `Add to PATH`,请重新安装**
 
 1. 找个不含空格和中文的文件夹，地址栏中输入 `cmd`回车，打开终端，以下命令均在该终端中执行
-2. 继续执行命令 `cd pyvideotrans`
+2. 继续执行命令 `cd BDvideoTrans`
 3. 继续执行 `python -m venv venv`
 6. 继续执行命令 `venv\Scripts\activate`,执行后请查看确认命令行开头已变成了`(venv)`,否则说明出错
 7. 执行 `pip install -r requirements.txt `，如果提示失败，执行如下2条命令切换pip镜像到阿里镜像
@@ -225,14 +225,14 @@ apt-get install ffmpeg
     `pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu126`
 
 
-9. windows  如果要启用cuda加速，必须有英伟达显卡，并且配置好了CUDA12+环境，具体安装见 [CUDA加速支持](https://pyvideotrans.com/gpu)
+9. windows  如果要启用cuda加速，必须有英伟达显卡，并且配置好了CUDA12+环境
 
 10. 解压 ffmpeg.zip 到当前源码目录下，提示覆盖则覆盖，解压后确保源码下的ffmepg文件夹内能看到 ffmpeg.exe ffprobe.exe ytwin32.exe,
 
 11. `python sp.py` 打开软件界面
 
 
-## [使用 UV 部署：参考文档](https://pyvideotrans.com/blog/uv)
+## 使用 UV 部署
 
 
 ##  源码部署问题说明
@@ -254,22 +254,18 @@ pip install ctranslate2==3.24.0
 
 # 使用教程和文档
 
-请查看 https://pyvideotrans.com
+请查看项目文档
 
 
 # 语音识别模型:
 
-   下载地址： https://pyvideotrans.com/model.html
+   请从官方渠道下载
 
 
 
-# 视频教程(第三方)
+# 视频教程
 
-[Mac下源码部署/b站](https://www.bilibili.com/video/BV1tK421y7rd/)
-
-[用Gemini Api 给视频翻译设置方法/b站](https://b23.tv/fED1dS3)
-
-[如何下载和安装](https://www.bilibili.com/video/BV1Gr421s7cN/)
+请参考项目文档
 
 
 # 软件预览截图

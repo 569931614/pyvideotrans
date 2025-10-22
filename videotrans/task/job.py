@@ -47,6 +47,7 @@ class WorkerPrepare(Thread):
         super().__init__()
 
     def run(self) -> None:
+        print("[DEBUG] WorkerPrepare thread started")
         while 1:
             if config.exit_soft:
                 return
@@ -57,7 +58,9 @@ class WorkerPrepare(Thread):
                 trk: BaseTask = config.prepare_queue.pop(0)
             except:
                 continue
+            print(f"[DEBUG] WorkerPrepare processing task: {trk.uuid}")
             if task_is_stop(trk.uuid):
+                print(f"[DEBUG] Task {trk.uuid} is stopped, skipping")
                 continue
             try:
 

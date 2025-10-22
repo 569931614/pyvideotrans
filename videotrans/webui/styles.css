@@ -424,6 +424,19 @@ input[type="checkbox"] {
   white-space: nowrap;
 }
 
+/* Clickable path hint */
+.clickable-path {
+  cursor: pointer;
+  color: #4a9eff;
+  text-decoration: underline;
+  transition: all 0.2s;
+}
+
+.clickable-path:hover {
+  color: #5aa9ff;
+  text-decoration: underline;
+}
+
 /* ========== Notification System ========== */
 
 .notification-container {

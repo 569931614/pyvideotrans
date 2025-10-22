@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo 启动 pyvideotrans GUI
+echo 启动 BDvideoTrans GUI
 echo ========================================
 echo.
 

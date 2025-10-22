@@ -78,7 +78,7 @@ class Ui_gptsovitsform(object):
         help_btn.setObjectName("help_btn")
         help_btn.setCursor(Qt.PointingHandCursor)
         help_btn.setText("查看填写教程" if config.defaulelang == 'zh' else "Fill out the tutorial")
-        help_btn.clicked.connect(lambda: tools.open_url(url='https://pyvideotrans.com/gptsovits'))
+        help_btn.clicked.connect(lambda: tools.show_error("请参考项目文档" if config.defaulelang == 'zh' else "Please refer to the project documentation", False))
 
         h3.addWidget(self.test)
         h3.addWidget(help_btn)
@@ -101,6 +101,6 @@ class Ui_gptsovitsform(object):
         self.save.setText("保存" if config.defaulelang == 'zh' else "Save")
         self.api_url.setPlaceholderText("填写http开头的完整地址,GPT-SoVITS自带api默认 http://127.0.0.1:9880")
         self.label.setText("GPT-SoVITS API")
-        self.extra.setPlaceholderText("填写通过extra键向api传递的额外参数，为空则传递pyvideotrans")
+        self.extra.setPlaceholderText("填写通过extra键向api传递的额外参数，为空则传递BDvideoTrans")
         self.test.setText("测试Api" if config.defaulelang == 'zh' else "Test API")
     # retranslateUi

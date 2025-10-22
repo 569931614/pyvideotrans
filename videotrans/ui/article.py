@@ -44,47 +44,43 @@ a:hover{color:#ff0}
 </style></head>
 <body style="font-size:9pt; font-weight:400; font-style:normal;">
 <div>
-<a  href="https://www.pyvideotrans.com" style="font-size:18px"> 
-最新教程请查看文档网站 pyvideotrans.com
-</a>
-<br>
-<a  href="https://tool.pyvideotrans.com/trans.html" style="font-size:14px;color:#aaa;display:block;margin-top:12px"> 
-在线免费视频翻译:使用更简单，无需注册无需登录，点击打开
-</a>
+<p style="font-size:18px;color:#fff">
+请参考项目文档
+</p>
 </div>
 
 
 
 <ul>
 
-<li><a href="https://pyvideotrans.com/guide">使用方法</a></li>
-<li><a href="https://pyvideotrans.com/01">新手快速入门</a></li>
-<li><a href="https://pyvideotrans.com/02">模型使用与说明</a></li>
-<li><a href="https://pyvideotrans.com/setting">界面选项与相关设置</a></li>
-<li><a href="https://pyvideotrans.com/duojuese">多角色配音</a></li>
-<li><a href="https://pyvideotrans.com/shiting">试听配音</a></li>         
-<li><a href="https://pyvideotrans.com/model">模型下载</a></li>
-<li><a href="https://pyvideotrans.com/faq">常见问题</a></li>
+<li>使用方法</li>
+<li>新手快速入门</li>
+<li>模型使用与说明</li>
+<li>界面选项与相关设置</li>
+<li>多角色配音</li>
+<li>试听配音</li>
+<li>模型下载</li>
+<li>常见问题</li>
 
-<li><a href="https://pyvideotrans.com/vocal">人声和背景音乐分离</a></li>   
-<li><a href="https://pyvideotrans.com/gpu">CUDA安装配置</a></li>
-<li><a href="https://pyvideotrans.com/cache">如何彻底删除缓存</a></li>
-<li><a href="https://pyvideotrans.com/chongshi">频繁出现重试5次失败</a></li>
-<li><a href="https://pyvideotrans.com/10">百度翻译/腾讯翻译/Gemini等API申请</a></li>
-<li><a href="https://pyvideotrans.com/openai">ChatGPT接口使用</a></li>          
-<li><a href="https://pyvideotrans.com/deeplx">部署DeepLX</a></li>
-<li><a href="https://pyvideotrans.com/06">在cloudflare上创建免费翻译API</a></li>
-<li><a href="https://pyvideotrans.com/13">FreeGoogle翻译使用</a></li>
-<li><a href="https://pyvideotrans.com/15">无需代理使用Google翻译的方法</a></li>
-<li><a href="https://pyvideotrans.com/ott">部署OTT文字翻译</a></li>
+<li>人声和背景音乐分离</li>
+<li>CUDA安装配置</li>
+<li>如何彻底删除缓存</li>
+<li>频繁出现重试5次失败</li>
+<li>百度翻译/腾讯翻译/Gemini等API申请</li>
+<li>ChatGPT接口使用</li>
+<li>部署DeepLX</li>
+<li>在cloudflare上创建免费翻译API</li>
+<li>FreeGoogle翻译使用</li>
+<li>无需代理使用Google翻译的方法</li>
+<li>部署OTT文字翻译</li>
 
-<li><a href="https://pyvideotrans.com/adv">选项参数说明</a></li>
-<li><a href="https://pyvideotrans.com/09">声音字幕画面对齐方法</a></li>
-<li><a href="https://pyvideotrans.com/03">faster模式与openai模式的区别</a></li>
-<li><a href="https://pyvideotrans.com/04">提高翻译质量的技巧</a></li>
-<li><a href="https://pyvideotrans.com/cli">CLI命令行使用</a></li>
-<li><a href="https://pyvideotrans.com/12">在软件中使用GPT-SoVITS配音</a></li>
-<li><a href="https://pyvideotrans.com/14">本地部署Qwen通义千问大模型</a></li>
+<li>选项参数说明</li>
+<li>声音字幕画面对齐方法</li>
+<li>faster模式与openai模式的区别</li>
+<li>提高翻译质量的技巧</li>
+<li>CLI命令行使用</li>
+<li>在软件中使用GPT-SoVITS配音</li>
+<li>本地部署Qwen通义千问大模型</li>
 
 </ul>
 

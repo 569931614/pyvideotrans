@@ -150,6 +150,51 @@ class WinAction(WinActionSub):
                     pass
         self.processbtns = {}
 
+    # 删除单个任务
+    def delete_single_task(self, uuid):
+        """删除指定uuid的任务"""
+        # 如果任务正在运行，先停止它
+        if uuid in config.uuid_logs_queue:
+            # 标记任务为已停止
+            config.stoped_uuid_set.add(uuid)
+            # 从日志队列中删除
+            del config.uuid_logs_queue[uuid]
+            # 创建停止标志文件
+            try:
+                Path(config.TEMP_DIR).mkdir(parents=True, exist_ok=True)
+                with open(config.TEMP_DIR + '/stop_porcess.txt', 'w', encoding='utf-8') as f:
+                    f.write('stop')
+            except:
+                pass
+
+        # 从任务按钮字典中删除
+        if uuid in self.processbtns:
+            widget = self.processbtns[uuid]
+            # 从布局中删除widget
+            self.main.processlayout.removeWidget(widget)
+            widget.deleteLater()
+            del self.processbtns[uuid]
+
+        # 从queue_mp4中删除对应的视频（在删除obj_list之前）
+        for obj in self.obj_list:
+            if obj.get('uuid') == uuid:
+                video_name = obj.get('name')
+                if video_name and video_name in self.queue_mp4:
+                    self.queue_mp4.remove(video_name)
+                break
+
+        # 从obj_list中删除
+        self.obj_list = [obj for obj in self.obj_list if obj.get('uuid') != uuid]
+
+        # 如果所有任务都被删除，重置状态
+        if len(self.processbtns) == 0:
+            config.current_status = 'stop'
+            self.main.startbtn.setText(config.transobj['start'])
+            self.disabled_widget(False)
+            self._disabled_button(False)
+            self.main.source_mp4.setText(config.transobj["No select videos"])
+            self.queue_mp4 = []
+
     # 将倒计时设为立即超时
     def set_djs_timeout(self):
         self.main.timeout_tips.setText('')
@@ -336,7 +381,8 @@ class WinAction(WinActionSub):
                     )
                     self.main.voice_role.addItems(['No'])
                 else:
-                    self.main.voice_role.addItems(['No'] + roles)
+                    # Google Cloud TTS: 默认选择第一个角色，而不是 No
+                    self.main.voice_role.addItems(roles + ['No'])
 
             except Exception as e:
                 config.logger.error(f"Erro ao listar vozes do Google Cloud TTS: {str(e)}")
@@ -348,23 +394,27 @@ class WinAction(WinActionSub):
                 self.main.current_rolelist = ['No']
                 self.main.voice_role.addItems(['No'])
         elif type == tts.OPENAI_TTS:
+            # OpenAI TTS: 默认选择第一个角色，而不是 No
             self.main.voice_role.clear()
             self.main.current_rolelist = config.params['openaitts_role'].split(',')
-            self.main.voice_role.addItems(['No'] + self.main.current_rolelist)
+            self.main.voice_role.addItems(self.main.current_rolelist + ['No'])
         elif type == tts.QWEN_TTS:
+            # Qwen TTS: 默认选择第一个角色，而不是 No
             self.main.voice_role.clear()
             self.main.current_rolelist = config.params['qwentts_role'].split(',')
-            self.main.voice_role.addItems(['No'] + self.main.current_rolelist)
+            self.main.voice_role.addItems(self.main.current_rolelist + ['No'])
         elif type == tts.GEMINI_TTS:
+            # Gemini TTS: 默认选择第一个角色，而不是 No
             self.main.voice_role.clear()
             self.main.current_rolelist = config.params['gemini_ttsrole'].split(',')
-            self.main.voice_role.addItems(['No'] + self.main.current_rolelist)
+            self.main.voice_role.addItems(self.main.current_rolelist + ['No'])
         elif type == tts.ELEVENLABS_TTS:
+            # ElevenLabs: 默认选择第一个角色，而不是 No
             self.main.voice_role.clear()
             self.main.current_rolelist = config.params['elevenlabstts_role']
             if len(self.main.current_rolelist) < 1:
                 self.main.current_rolelist = tools.get_elevenlabs_role()
-            self.main.voice_role.addItems(['No'] + self.main.current_rolelist)
+            self.main.voice_role.addItems(self.main.current_rolelist + ['No'])
         elif self.change_by_lang(type):
             self.set_voice_role(self.main.target_language.currentText())
         elif type == tts.CLONE_VOICE_TTS:
@@ -373,10 +423,11 @@ class WinAction(WinActionSub):
             self.main.voice_role.addItems(self.main.current_rolelist)
             threading.Thread(target=tools.get_clone_role).start()
         elif type == tts.CHATTTS:
+            # ChatTTS: 默认选择第一个角色，而不是 No
             self.main.voice_role.clear()
             config.ChatTTS_voicelist = re.split(r'[,，]', config.settings['chattts_voice'])
             self.main.current_rolelist = list(config.ChatTTS_voicelist)
-            self.main.voice_role.addItems(['No'] + self.main.current_rolelist)
+            self.main.voice_role.addItems(self.main.current_rolelist + ['No'])
         elif type == tts.TTS_API:
             self.main.voice_role.clear()
             self.main.current_rolelist = config.params['ttsapi_voice_role'].strip().split(',')
@@ -435,10 +486,14 @@ class WinAction(WinActionSub):
 
         self.main.listen_btn.hide()
         self.main.voice_role.clear()
-        # 未设置目标语言，则清空 edgeTTS角色
+        # 未设置目标语言，则显示提示文本
         if t == '-':
-            self.main.voice_role.addItems(['No'])
+            self.main.voice_role.addItems(['请先选择目标语言' if config.defaulelang == 'zh' else 'Select target language first'])
+            self.main.voice_role.setEnabled(False)
             return
+
+        # 启用配音角色下拉框
+        self.main.voice_role.setEnabled(True)
 
         show_rolelist = None
         tts_type = self.main.tts_type.currentIndex()
@@ -495,6 +550,9 @@ class WinAction(WinActionSub):
                 return
             self.main.current_rolelist = show_rolelist[vt]
             self.main.voice_role.addItems(show_rolelist[vt])
+            # 设置第一个角色为默认值（不是 No）
+            if len(show_rolelist[vt]) > 0:
+                self.main.voice_role.setCurrentIndex(0)
         except:
             self.main.voice_role.addItems(['No'])
 
@@ -621,6 +679,18 @@ class WinAction(WinActionSub):
         if self.cfg['voice_role'] == 'No':
             self.cfg['is_separate'] = False
         self.cfg['cuda'] = self.main.enable_cuda.isChecked()
+
+        # 视频预处理设置 - 只读取秒数，不需要勾选复选框
+        ui_trim_start = self.main.trim_start.value()
+        ui_trim_end = self.main.trim_end.value()
+
+        # 只要有秒数就启用预处理
+        ui_enable = (ui_trim_start > 0 or ui_trim_end > 0)
+
+        # 赋值到cfg
+        self.cfg['enable_preprocess'] = ui_enable
+        self.cfg['trim_start'] = ui_trim_start
+        self.cfg['trim_end'] = ui_trim_end
 
         # 添加背景音频
         self.cfg['back_audio'] = self.main.back_audio.text().strip()
@@ -787,6 +857,7 @@ class WinAction(WinActionSub):
             self.queue_mp4[0]).parent.as_posix() + "/_video_out").resolve().as_posix()
         self.cfg["target_dir"] = target_dir
         self.main.btn_save_dir.setToolTip(target_dir)
+        self.update_save_dir_label(target_dir)
         self.obj_list = []
         # queue_mp4中的名字可能已修改为规范
         new_name = []
@@ -849,7 +920,7 @@ class WinAction(WinActionSub):
     # 添加进度条
     def add_process_btn(self, *, target_dir: str = None, name: str = None, uuid=None):
         from videotrans.component.progressbar import ClickableProgressBar
-        clickable_progress_bar = ClickableProgressBar(self)
+        clickable_progress_bar = ClickableProgressBar(self, uuid=uuid)
         clickable_progress_bar.progress_bar.setValue(0)  # 设置当前进度值
         clickable_progress_bar.setText(config.transobj["waitforstart"])
         clickable_progress_bar.setMinimumSize(500, 50)
@@ -864,6 +935,7 @@ class WinAction(WinActionSub):
             name=name
         )
         clickable_progress_bar.setCursor(Qt.PointingHandCursor)
+        clickable_progress_bar.delete_clicked.connect(self.delete_single_task)  # 连接删除信号
         self.main.processlayout.addWidget(clickable_progress_bar)
         if uuid:
             self.processbtns[uuid] = clickable_progress_bar
@@ -931,6 +1003,7 @@ class WinAction(WinActionSub):
                     tools.show_error(config.transobj['shutdownerror'] + str(e))
             self.main.target_dir = None
             self.main.btn_save_dir.setToolTip('')
+            self.update_save_dir_label('')
         else:
             # 任务队列中设为停止并删除队列，防止后续到来的日志继续显示
             for it in self.obj_list:

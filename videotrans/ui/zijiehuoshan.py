@@ -78,7 +78,7 @@ class Ui_zijiehuoshanform(object):
         self.label_0 = QtWidgets.QPushButton(zijiehuoshanform)
         self.label_0.setText('点击打开使用教程')
         self.label_0.setStyleSheet("background-color: rgba(255, 255, 255,0);text-align:left")
-        self.label_0.clicked.connect(lambda: tools.open_url('https://pyvideotrans.com/zijiehuoshan'))
+        self.label_0.clicked.connect(lambda: tools.show_error("请参考项目文档" if config.defaulelang == 'zh' else "Please refer to the project documentation", False))
         self.label_0.setCursor(QtCore.Qt.PointingHandCursor)
         h3.addWidget(self.set_zijiehuoshan)
         h3.addWidget(self.test_zijiehuoshan)

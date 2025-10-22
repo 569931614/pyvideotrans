@@ -1,4 +1,4 @@
-# 本代码复制自 https://github.com/OpenDocCN/python-code-anls/blob/master/docs/hf-tfm/models----clvp----number_normalizer.py.md
+# 本代码复制自开源项目 python-code-anls
 # 以下为原文件所附带版权声明
 #
 # coding=utf-8
@@ -205,9 +205,7 @@ class EnglishNormalizer:
 
     def _expand_number(self, m: str) -> str:
         """
-        This method acts as a preprocessing step for numbers between 1000 and 3000 (same as the original repository,
-        link :
-        https://github.com/neonbjb/tortoise-tts/blob/4003544b6ff4b68c09856e04d3eff9da26d023c2/tortoise/utils/tokenizer.py#L86)
+        This method acts as a preprocessing step for numbers between 1000 and 3000 (same as the original repository)
         """
         # 提取匹配到的数字字符串并转换为整数
         num = int(m.group(0))

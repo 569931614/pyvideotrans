@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo 正在安装 pyvideotrans 依赖...
+echo 正在安装 BDvideoTrans 依赖...
 echo ========================================
 echo.
 

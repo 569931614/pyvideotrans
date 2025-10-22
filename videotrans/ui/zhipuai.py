@@ -102,7 +102,7 @@ class Ui_zhipuaiform(object):
         help_btn.setObjectName("help_btn")
         help_btn.setCursor(Qt.PointingHandCursor)
         help_btn.setText("查看填写教程" if config.defaulelang == 'zh' else "Fill out the tutorial")
-        help_btn.clicked.connect(lambda: tools.open_url(url='https://pyvideotrans.com/zhipuai-ai'))
+        help_btn.clicked.connect(lambda: tools.show_error("请参考项目文档" if config.defaulelang == 'zh' else "Please refer to the project documentation", False))
 
         h4.addWidget(self.set)
         h4.addWidget(self.test)

@@ -85,7 +85,7 @@ class Ui_f5ttsform(object):
         help_btn.setObjectName("help_btn")
         help_btn.setCursor(Qt.PointingHandCursor)
         help_btn.setText("查看填写教程" if config.defaulelang == 'zh' else "Fill out the tutorial")
-        help_btn.clicked.connect(lambda: tools.open_url(url='https://pyvideotrans.com/f5tts'))
+        help_btn.clicked.connect(lambda: tools.show_error("请参考项目文档" if config.defaulelang == 'zh' else "Please refer to the project documentation", False))
 
         self.is_whisper = QtWidgets.QCheckBox()
         self.is_whisper.setText("针对F5-TTS重新识别?")

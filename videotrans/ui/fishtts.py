@@ -74,7 +74,7 @@ class Ui_fishttsform(object):
         help_btn.setObjectName("help_btn")
         help_btn.setCursor(Qt.PointingHandCursor)
         help_btn.setText("查看填写教程" if config.defaulelang == 'zh' else "Fill out the tutorial")
-        help_btn.clicked.connect(lambda: tools.open_url(url='https://pyvideotrans.com/fishtts'))
+        help_btn.clicked.connect(lambda: tools.show_error("请参考项目文档" if config.defaulelang == 'zh' else "Please refer to the project documentation", False))
 
         h2.addWidget(self.save)
         h2.addWidget(self.test)
@@ -89,7 +89,7 @@ class Ui_fishttsform(object):
 
     def retranslateUi(self, fishttsform):
         tips = """
-Fish-speech TTS 开源地址 https://github.com/fishaudio/fish-speech
+Fish-speech TTS 开源项目
 
 将以POST请求向填写的API地址发送application/json数据：
 

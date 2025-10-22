@@ -89,5 +89,5 @@ def openwin():
     winobj.edit_allmodels.textChanged.connect(setallmodels)
     winobj.set_ai302.clicked.connect(save_ai302)
     winobj.test_ai302.clicked.connect(test)
-    winobj.label_0.clicked.connect(lambda: webbrowser.open_new_tab("https://pyvideotrans.com/302ai"))
+    winobj.label_0.clicked.connect(lambda: tools.show_error("请参考项目文档" if config.defaulelang == 'zh' else "Please refer to the project documentation", False))
     winobj.show()

@@ -6,6 +6,7 @@ import shutil
 import threading
 import time
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import List, Dict
 
@@ -102,6 +103,14 @@ class TransCreate(BaseTask):
             final_cfg.update(self.cfg)
 
         self.cfg = final_cfg
+
+        # 确保预处理参数存在，如果传入的cfg中没有，从config.params中获取
+        if 'enable_preprocess' not in self.cfg:
+            self.cfg['enable_preprocess'] = config.params.get('enable_preprocess', False)
+        if 'trim_start' not in self.cfg:
+            self.cfg['trim_start'] = config.params.get('trim_start', 0)
+        if 'trim_end' not in self.cfg:
+            self.cfg['trim_end'] = config.params.get('trim_end', 0)
         self.video_codec_num = int(config.settings.get('video_codec', 264))
 
         # 设置 self.cfg, self.uuid 等基础属性
@@ -260,6 +269,13 @@ class TransCreate(BaseTask):
     def prepare(self) -> None:
         if self._exit():
             return
+
+        # 视频预处理：裁剪头尾（只要设置了秒数就处理，不需要勾选复选框）
+        trim_start = float(self.cfg.get('trim_start', 0))
+        trim_end = float(self.cfg.get('trim_end', 0))
+        if trim_start > 0 or trim_end > 0:
+            self._preprocess_trim_video(trim_start, trim_end)
+
         # 将原始视频分离为无声视频和音频
         if self.cfg['app_mode'] not in ['tiqu']:
             config.queue_novice[self.cfg['noextname']] = 'ing'
@@ -352,7 +368,7 @@ class TransCreate(BaseTask):
                 if self.cfg['detect_language'] != 'auto':
                     cmd.extend(['-l', self.cfg['detect_language'].split('-')[0]])
                 cmd.extend(['--model', self.cfg['model_name'], '--output_dir', self.cfg['target_dir']])
-                txt_file = Path(config.settings.get('Faster_Whisper_XXL', '')).parent.as_posix() + '/pyvideotrans.txt'
+                txt_file = Path(config.settings.get('Faster_Whisper_XXL', '')).parent.as_posix() + '/BDvideoTrans.txt'
                 if Path(txt_file).exists():
                     cmd.extend(Path(txt_file).read_text(encoding='utf-8').strip().split(' '))
 
@@ -756,28 +772,59 @@ class TransCreate(BaseTask):
 
                 _cfg.logger.info(f"Generated {len(paragraphs_with_summaries)} paragraph summaries")
 
-                # Step 4: Store in vector database
-                vector_store = get_vector_store()
-                video_path = self.cfg.get('name', '')
+                # Step 4: Save summary to file
+                try:
+                    summary_file = Path(self.cfg['target_dir']) / 'summary.txt'
+                    with open(summary_file, 'w', encoding='utf-8') as f:
+                        f.write("=" * 80 + "\n")
+                        f.write("视频智能摘要 (HearSight)\n")
+                        f.write("=" * 80 + "\n\n")
+                        f.write(f"视频文件: {self.cfg.get('basename', '')}\n")
+                        f.write(f"原语言: {self.cfg.get('source_language', '')}\n")
+                        f.write(f"目标语言: {self.cfg.get('target_language', '')}\n")
+                        f.write(f"生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                        f.write("\n" + "=" * 80 + "\n")
+                        f.write("整体摘要\n")
+                        f.write("=" * 80 + "\n\n")
+                        f.write(summary + "\n\n")
+                        f.write("=" * 80 + "\n")
+                        f.write("段落摘要\n")
+                        f.write("=" * 80 + "\n\n")
+                        for i, para in enumerate(paragraphs_with_summaries, 1):
+                            f.write(f"段落 {i}:\n")
+                            f.write(f"时间: {para['start_time']} --> {para['end_time']}\n")
+                            f.write(f"摘要: {para['summary']}\n")
+                            f.write(f"原文:\n{para['text']}\n")
+                            f.write("-" * 80 + "\n\n")
+                    _cfg.logger.info(f"✅ Summary saved to: {summary_file}")
+                except Exception as e:
+                    _cfg.logger.error(f"❌ Failed to save summary to file: {e}")
 
-                metadata = {
-                    'basename': self.cfg.get('basename', ''),
-                    'source_language': self.cfg.get('source_language_code', ''),
-                    'target_language': self.cfg.get('target_language_code', ''),
-                    'app_mode': self.cfg.get('app_mode', '')
-                }
+                # Step 5: Store in vector database
+                try:
+                    vector_store = get_vector_store()
+                    video_path = self.cfg.get('name', '')
 
-                success = vector_store.store_summary(
-                    video_path=video_path,
-                    summary=summary,
-                    paragraphs=paragraphs_with_summaries,
-                    metadata=metadata
-                )
+                    metadata = {
+                        'basename': self.cfg.get('basename', ''),
+                        'source_language': self.cfg.get('source_language_code', ''),
+                        'target_language': self.cfg.get('target_language_code', ''),
+                        'app_mode': self.cfg.get('app_mode', '')
+                    }
 
-                if success:
-                    _cfg.logger.info(f"✅ Successfully stored HearSight summary in vector database")
-                else:
-                    _cfg.logger.warning(f"⚠️ Failed to store HearSight summary in vector database")
+                    success = vector_store.store_summary(
+                        video_path=video_path,
+                        summary=summary,
+                        paragraphs=paragraphs_with_summaries,
+                        metadata=metadata
+                    )
+
+                    if success:
+                        _cfg.logger.info(f"✅ Successfully stored HearSight summary in vector database")
+                    else:
+                        _cfg.logger.warning(f"⚠️ Failed to store HearSight summary in vector database")
+                except Exception as e:
+                    _cfg.logger.warning(f"⚠️ Failed to store in vector database: {e}")
 
             except Exception as e:
                 try:
@@ -802,6 +849,64 @@ class TransCreate(BaseTask):
             shutil.rmtree(self.cfg['cache_folder'], ignore_errors=True)
         except Exception as e:
             config.logger.exception(e, exc_info=True)
+
+    # 视频预处理：裁剪头尾
+    def _preprocess_trim_video(self, trim_start, trim_end):
+        try:
+            self.status_text = '正在进行视频预处理...' if config.defaulelang == 'zh' else 'Video preprocessing...'
+            self._signal(text=self.status_text)
+
+            # 创建预处理后的临时文件
+            preprocessed_video = f"{self.cfg['cache_folder']}/preprocessed_video{Path(self.cfg['name']).suffix}"
+
+            # 构建ffmpeg命令
+            cmd = ["-y", "-i", self.cfg['name']]
+
+            # 添加裁剪参数
+            if trim_start > 0:
+                cmd.extend(["-ss", str(trim_start)])
+
+            if trim_end > 0:
+                # 需要先获取视频总时长
+                import subprocess
+                probe_cmd = [
+                    config.FFPROBE_BIN, "-v", "error",
+                    "-show_entries", "format=duration",
+                    "-of", "default=noprint_wrappers=1:nokey=1",
+                    self.cfg['name']
+                ]
+                result = subprocess.run(probe_cmd, capture_output=True, text=True)
+                try:
+                    total_duration = float(result.stdout.strip())
+                    target_duration = total_duration - trim_start - trim_end
+                    if target_duration > 0:
+                        cmd.extend(["-t", str(target_duration)])
+                except:
+                    config.logger.warning(f"无法获取视频时长，跳过尾部裁剪")
+
+            # 复制编码以加快速度
+            cmd.extend(["-c:v", "copy", "-c:a", "copy", preprocessed_video])
+
+            tools.runffmpeg(cmd)
+
+            # 验证预处理后的文件
+            if tools.vail_file(preprocessed_video):
+                # 备份原始视频路径
+                self.cfg['original_video'] = self.cfg['name']
+                # 使用预处理后的视频作为新的输入
+                self.cfg['name'] = preprocessed_video
+                msg = f"视频预处理完成: 去掉头部{trim_start}秒, 尾部{trim_end}秒" if config.defaulelang == 'zh' else f"Video preprocessed: trimmed {trim_start}s from start, {trim_end}s from end"
+                self._signal(text=msg)
+                config.logger.info(msg)
+            else:
+                raise RuntimeError("预处理后的视频文件无效" if config.defaulelang == 'zh' else "Preprocessed video file is invalid")
+
+        except Exception as e:
+            error_msg = f"视频预处理失败: {str(e)}" if config.defaulelang == 'zh' else f"Video preprocessing failed: {str(e)}"
+            config.logger.error(error_msg)
+            self._signal(text=error_msg)
+            # 预处理失败不中断整个流程，继续使用原始视频
+            config.logger.warning("将继续使用原始视频" if config.defaulelang == 'zh' else "Will continue with original video")
 
     # 从原始视频分离出 无声视频
     def _split_novoice_byraw(self):

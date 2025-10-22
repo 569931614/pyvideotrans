@@ -56,7 +56,7 @@ class Ui_doubaoform(object):
         self.label_0.setText('点击查看填写教程')
         self.label_0.setStyleSheet("background-color: rgba(255, 255, 255,0)")
         self.label_0.setCursor(Qt.PointingHandCursor)
-        self.label_0.clicked.connect(lambda: tools.open_url(url='https://pyvideotrans.com/doubao'))
+        self.label_0.clicked.connect(lambda: tools.show_error("请参考项目文档" if config.defaulelang == 'zh' else "Please refer to the project documentation", False))
         h3.addWidget(self.set_save)
         h3.addWidget(self.test)
         h3.addWidget(self.label_0)

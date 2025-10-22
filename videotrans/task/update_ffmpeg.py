@@ -5,7 +5,7 @@ This script for downloading/updating ffmpeg was created by Thiago Ramos.
 Contact: thiagojramos@outlook.com
 
 The ffmpeg executables (ffmpeg.exe and ffprobe.exe) are created and maintained by the FFmpeg developers.
-For more information, visit the FFmpeg GitHub repository: https://github.com/BtbN/FFmpeg-Builds
+For more information, visit the FFmpeg official website.
 
 This script is provided "as is", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and noninfringement. In no event shall the authors be liable for any claim, damages, or other liability, whether in an action of contract, tort, or otherwise, arising from, out of, or in connection with the script or the use or other dealings in the script.
 """
@@ -24,7 +24,7 @@ dest_dir = os.path.join(script_dir, "..", "..", "ffmpeg")
 temp_dir = os.path.join(dest_dir, "temp_ffmpeg")
 os.makedirs(dest_dir, exist_ok=True)
 
-# GitHub API URL to get the latest ffmpeg version
+# API URL to get the latest ffmpeg version
 api_url = "https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/latest"
 resp = requests.get(api_url, timeout=60)
 resp.raise_for_status()

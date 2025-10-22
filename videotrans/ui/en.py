@@ -72,6 +72,41 @@ class Ui_MainWindow(object):
         self.btn_save_dir.setObjectName("btn_save_dir")
         self.horizontalLayout_6.addWidget(self.btn_save_dir)
 
+        # 添加可点击的保存路径标签（使用自定义类）
+        from PySide6.QtCore import Signal
+        class ClickableLabel(QtWidgets.QLabel):
+            clicked = Signal()
+            def mousePressEvent(self, event):
+                self.clicked.emit()
+                super().mousePressEvent(event)
+
+        self.save_dir_label = ClickableLabel(self.layoutWidget)
+        self.save_dir_label.setMinimumSize(QtCore.QSize(150, 30))
+        self.save_dir_label.setMaximumSize(QtCore.QSize(350, 30))
+        self.save_dir_label.setObjectName("save_dir_label")
+        self.save_dir_label.setText("📁 " + ("未选择" if config.defaulelang == 'zh' else "Not selected"))
+        self.save_dir_label.setStyleSheet("""
+            QLabel {
+                color: #0066cc;
+                text-decoration: underline;
+                padding: 5px;
+                border: 1px solid #ddd;
+                border-radius: 3px;
+                background-color: #f8f9fa;
+            }
+            QLabel:hover {
+                color: #0052a3;
+                background-color: #e7f3ff;
+                border-color: #0066cc;
+            }
+        """)
+        self.save_dir_label.setCursor(QtCore.Qt.PointingHandCursor)
+        self.save_dir_label.setWordWrap(False)
+        from PySide6.QtCore import Qt
+        self.save_dir_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.save_dir_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.horizontalLayout_6.addWidget(self.save_dir_label)
+
         self.only_video = QtWidgets.QCheckBox(self.layoutWidget)
         self.only_video.setMinimumSize(QtCore.QSize(0, 30))
         self.only_video.setObjectName("only_video")
@@ -94,10 +129,74 @@ class Ui_MainWindow(object):
         self.shutdown.setText('完成后关机' if config.defaulelang == 'zh' else 'Automatic shutdown')
         self.shutdown.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
 
+        # HearSight智能摘要勾选框（移动到输入与输出组件）
+        self.enable_hearsight = QtWidgets.QCheckBox(self.layoutWidget)
+        self.enable_hearsight.setMinimumSize(QtCore.QSize(50, 20))
+        self.enable_hearsight.setObjectName("enable_hearsight")
+        self.enable_hearsight.setToolTip("完成翻译后自动生成智能摘要并存储到向量库")
+        self.enable_hearsight.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+
         self.horizontalLayout_6.addWidget(self.copysrt_rawvideo)
         self.horizontalLayout_6.addWidget(self.only_video)
         self.horizontalLayout_6.addWidget(self.shutdown)
         self.verticalLayout_3.addLayout(self.horizontalLayout_6)
+
+        # 创建新的一行用于智能摘要等勾选框
+        self.horizontalLayout_6a = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_6a.setObjectName("horizontalLayout_6a")
+        self.horizontalLayout_6a.addWidget(self.enable_hearsight)
+        self.horizontalLayout_6a.addStretch()
+        self.verticalLayout_3.addLayout(self.horizontalLayout_6a)
+
+        # 视频预处理设置
+        self.horizontalLayout_preprocess = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_preprocess.setObjectName("horizontalLayout_preprocess")
+
+        # 保留控件定义但隐藏，因为已经改为自动根据秒数判断
+        self.enable_preprocess = QtWidgets.QCheckBox(self.layoutWidget)
+        self.enable_preprocess.setMinimumSize(QtCore.QSize(50, 20))
+        self.enable_preprocess.setObjectName("enable_preprocess")
+        self.enable_preprocess.setText('视频预处理' if config.defaulelang == 'zh' else 'Video Preprocess')
+        self.enable_preprocess.setToolTip('填写秒数即自动处理，无需勾选' if config.defaulelang == 'zh' else 'Auto-process when seconds are set')
+        self.enable_preprocess.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+        self.enable_preprocess.hide()  # 隐藏复选框
+
+        self.trim_start_label = QtWidgets.QLabel(self.layoutWidget)
+        self.trim_start_label.setText('去掉头部(秒)' if config.defaulelang == 'zh' else 'Trim Start(s)')
+        self.trim_start_label.setMinimumSize(QtCore.QSize(80, 20))
+        self.trim_start_label.setToolTip('填写秒数自动处理，无需勾选' if config.defaulelang == 'zh' else 'Auto-process when set')
+
+        self.trim_start = QtWidgets.QDoubleSpinBox(self.layoutWidget)
+        self.trim_start.setMinimum(0)
+        self.trim_start.setMaximum(3600)
+        self.trim_start.setDecimals(2)
+        self.trim_start.setSingleStep(0.1)
+        self.trim_start.setMinimumWidth(90)
+        self.trim_start.setValue(0)
+        self.trim_start.setObjectName("trim_start")
+        self.trim_start.setToolTip('从视频开始裁剪的秒数' if config.defaulelang == 'zh' else 'Seconds to trim from start')
+
+        self.trim_end_label = QtWidgets.QLabel(self.layoutWidget)
+        self.trim_end_label.setText('去掉尾部(秒)' if config.defaulelang == 'zh' else 'Trim End(s)')
+        self.trim_end_label.setMinimumSize(QtCore.QSize(80, 20))
+
+        self.trim_end = QtWidgets.QDoubleSpinBox(self.layoutWidget)
+        self.trim_end.setMinimum(0)
+        self.trim_end.setMaximum(3600)
+        self.trim_end.setDecimals(2)
+        self.trim_end.setSingleStep(0.1)
+        self.trim_end.setMinimumWidth(90)
+        self.trim_end.setValue(0)
+        self.trim_end.setObjectName("trim_end")
+        self.trim_end.setToolTip('从视频结尾裁剪的秒数' if config.defaulelang == 'zh' else 'Seconds to trim from end')
+
+        self.horizontalLayout_preprocess.addWidget(self.enable_preprocess)
+        self.horizontalLayout_preprocess.addWidget(self.trim_start_label)
+        self.horizontalLayout_preprocess.addWidget(self.trim_start)
+        self.horizontalLayout_preprocess.addWidget(self.trim_end_label)
+        self.horizontalLayout_preprocess.addWidget(self.trim_end)
+        self.horizontalLayout_preprocess.addStretch()
+        self.verticalLayout_3.addLayout(self.horizontalLayout_preprocess)
 
         self.horizontalLayout_5 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_5.setSizeConstraint(QtWidgets.QLayout.SetMinimumSize)
@@ -256,9 +355,35 @@ class Ui_MainWindow(object):
         self.voice_role.setMinimumSize(QtCore.QSize(160, 30))
         self.voice_role.setMaximumWidth(160)
         self.voice_role.setObjectName("voice_role")
+        # 设置配音角色下拉框可编辑
+        self.voice_role.setEditable(True)
+        self.voice_role.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+
+        # 配音角色选择按钮
+        self.voice_role_select_btn = QtWidgets.QPushButton(self.layoutWidget)
+        self.voice_role_select_btn.setMinimumSize(QtCore.QSize(30, 30))
+        self.voice_role_select_btn.setMaximumSize(QtCore.QSize(30, 30))
+        self.voice_role_select_btn.setObjectName("voice_role_select_btn")
+        self.voice_role_select_btn.setText("...")
+        self.voice_role_select_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #2563eb;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #3a8eef;
+            }
+        """)
+        self.voice_role_select_btn.setToolTip(
+            '打开配音角色选择窗口' if config.defaulelang == 'zh' else 'Open voice role selection window')
+        self.voice_role_select_btn.setCursor(Qt.PointingHandCursor)
 
         self.horizontalLayout.addWidget(self.label_4)
         self.horizontalLayout.addWidget(self.voice_role)
+        self.horizontalLayout.addWidget(self.voice_role_select_btn)
         self.horizontalLayout.addWidget(self.listen_btn)
 
         self.label_6 = QtWidgets.QLabel(self.layoutWidget)
@@ -614,13 +739,6 @@ class Ui_MainWindow(object):
         self.enable_cuda.setToolTip(config.transobj['cudatips'])
         self.enable_cuda.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
 
-        # HearSight智能摘要勾选框
-        self.enable_hearsight = QtWidgets.QCheckBox(self.layoutWidget)
-        self.enable_hearsight.setMinimumSize(QtCore.QSize(50, 20))
-        self.enable_hearsight.setObjectName("enable_hearsight")
-        self.enable_hearsight.setToolTip("完成翻译后自动生成智能摘要并存储到向量库")
-        self.enable_hearsight.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
-
         self.startbtn = QtWidgets.QPushButton(self.layoutWidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -630,12 +748,7 @@ class Ui_MainWindow(object):
         self.startbtn.setMinimumSize(QtCore.QSize(160, 40))
         self.startbtn.setObjectName("startbtn")
 
-        vhlayout = QtWidgets.QVBoxLayout()
-        vhlayout.setAlignment(Qt.AlignVCenter)
-        vhlayout.addWidget(self.enable_cuda)
-        vhlayout.addWidget(self.enable_hearsight)
-
-        self.horizontalLayout_3.addLayout(vhlayout)
+        self.horizontalLayout_3.addWidget(self.enable_cuda)
         self.horizontalLayout_3.addWidget(self.startbtn)
 
         self.continue_compos = QtWidgets.QPushButton(self.layoutWidget)

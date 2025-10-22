@@ -72,7 +72,7 @@ class Ui_cosyvoiceform(object):
         help_btn.setObjectName("help_btn")
         help_btn.setCursor(Qt.PointingHandCursor)
         help_btn.setText("查看填写教程" if config.defaulelang == 'zh' else "Fill out the tutorial")
-        help_btn.clicked.connect(lambda: tools.open_url(url='https://pyvideotrans.com/cosyvoice'))
+        help_btn.clicked.connect(lambda: tools.show_error("请参考项目文档" if config.defaulelang == 'zh' else "Please refer to the project documentation", False))
 
         h2.addWidget(self.save)
         h2.addWidget(self.test)
@@ -89,8 +89,7 @@ class Ui_cosyvoiceform(object):
     def retranslateUi(self, cosyvoiceform):
         tips = """
 # 需要预先部署CosyVoice官方项目，并放入了CosyVoice-api项目中的api.py
-# CosyVoice-api项目地址 https://github.com/jianchang512/CosyVoice-api
-# CosyVoice项目地址 https://github.com/FunAudioLLM/CosyVoice
+# 请参考项目文档获取相关信息
 
 将以POST请求向填写的API地址发送数据：
 CosyVoice-api项目的api接口默认 http://127.0.0.1:9233

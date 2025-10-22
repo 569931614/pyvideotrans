@@ -8,7 +8,13 @@
   },
   "vector": {
     "type": "chromadb",
-    "persist_directory": "F:\\智能体定制\\20250904translateVideo\\shared_vector_db"
+    "persist_directory": null,
+    "volcengine": {
+      "api_key": "",
+      "base_url": "https://ark.cn-beijing.volces.com/api/v3",
+      "collection_name": "video_summaries",
+      "embedding_model": ""
+    }
   },
   "ai": {
     "provider": "openai",

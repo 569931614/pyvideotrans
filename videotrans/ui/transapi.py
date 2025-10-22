@@ -64,7 +64,7 @@ class Ui_transapiform(object):
         help_btn.setObjectName("help_btn")
         help_btn.setCursor(Qt.PointingHandCursor)
         help_btn.setText("查看填写教程" if config.defaulelang == 'zh' else "Fill out the tutorial")
-        help_btn.clicked.connect(lambda: tools.open_url(url='https://pyvideotrans.com/transapi'))
+        help_btn.clicked.connect(lambda: tools.show_error("请参考项目文档" if config.defaulelang == 'zh' else "Please refer to the project documentation", False))
         h3.addWidget(self.save)
         h3.addWidget(self.test)
         h3.addWidget(help_btn)
@@ -88,7 +88,7 @@ target_language:目标文字语言代码zh,en,ja,ko,ru,de,fr,tr,th,vi,ar,hi,hu,e
 {
     code:0=成功时，>0的数字代表失败 , msg:ok=成功时，其他为失败原因, text:翻译后的文本
 }
-基于cloudflare和m2m100实现的免费翻译API见: github.com/jianchang512/translate-api
+基于cloudflare和m2m100实现的免费翻译API请参考项目文档
 """
         else:
             tips = """
@@ -100,7 +100,7 @@ Expect data to be returned from the interface in json format:
 {
     code:0=on success  numbers >0 represent failures, msg:ok=success  others are failure reasons,text:Translated text
 }
-Usage: github.com/jianchang512/translate-api
+Usage: Please refer to the project documentation
 """
         transapiform.setWindowTitle(
             "自定义翻译API/无编码能力勿使用该功能" if config.defaulelang == 'zh' else "Customizing the Translate API")

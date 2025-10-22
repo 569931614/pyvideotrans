@@ -15,7 +15,7 @@ MAINWIN = None
 IS_FROZEN = True if getattr(sys, 'frozen', False) else False
 
 
-# 获取程序执行目录
+# 获取程序执行目录（用于可写文件，如配置、日志等）
 def _get_executable_path():
     if IS_FROZEN:
         # 如果程序是被"冻结"打包的，使用这个路径
@@ -25,10 +25,29 @@ def _get_executable_path():
         return Path(__file__).parent.parent.parent.as_posix()
 
 
+# 获取数据文件目录（用于只读资源文件，如语言文件、样式等）
+def _get_data_path():
+    if IS_FROZEN:
+        # PyInstaller 打包后，数据文件在 _internal 目录下
+        # 但 sys._MEIPASS 指向的是临时解压目录，我们需要使用相对于可执行文件的路径
+        # 实际上 PyInstaller 会把数据文件放在 _internal 目录
+        # 但在运行时，Python 模块已经从 _internal 加载，所以 __file__ 会指向正确的位置
+        # 我们使用 sys._MEIPASS 来获取打包后的资源目录
+        if hasattr(sys, '_MEIPASS'):
+            return Path(sys._MEIPASS).as_posix()
+        else:
+            return Path(sys.executable).parent.as_posix()
+    else:
+        return Path(__file__).parent.parent.parent.as_posix()
+
+
 SYS_TMP = Path(tempfile.gettempdir()).as_posix()
-# 程序根目录
+# 程序根目录（用于可写文件）
 ROOT_DIR = _get_executable_path()
 _root_path = Path(ROOT_DIR)
+# 数据文件目录（用于只读资源）
+DATA_DIR = _get_data_path()
+_data_path = Path(DATA_DIR)
 _tmpname = f'tmp'
 # 程序根下临时目录tmp
 _temp_path = _root_path / _tmpname
@@ -176,16 +195,25 @@ codec_cache = {}
 
 # 设置默认高级参数值
 def parse_init(update_data=None):
+    # 确保 videotrans 目录存在
+    Path(ROOT_DIR + "/videotrans").mkdir(parents=True, exist_ok=True)
+
     if update_data:
         with  open(ROOT_DIR + "/videotrans/cfg.json", 'w', encoding='utf-8') as f:
             f.write(json.dumps(update_data, ensure_ascii=False))
         return update_data
-    _defaulthomedir = (Path.home() / 'Videos/translateVideo').as_posix()
+
+    # 使用程序根目录下的 output 作为默认输出目录，避免跨用户路径问题
+    _defaulthomedir = (Path(ROOT_DIR) / 'output').as_posix()
     try:
         Path(_defaulthomedir).mkdir(parents=True, exist_ok=True)
-    except:
+    except Exception as e:
+        # 如果创建失败，使用 hometemp 作为备用
         _defaulthomedir = ROOT_DIR + '/hometemp'
-        Path(_defaulthomedir).mkdir(parents=True, exist_ok=True)
+        try:
+            Path(_defaulthomedir).mkdir(parents=True, exist_ok=True)
+        except:
+            pass
     default = {
         "ai302_models": "gpt-4o-mini,gpt-4o,qwen-max,glm-4,yi-large,deepseek-chat,doubao-pro-128k,gemini-2.0-flash",
         'qwenmt_model':"qwen-mt-turbo,qwen-mt-plus,qwen3-asr-flash,qwen-plus,qwen-turbo,qwen-plus-latest,qwen-turbo-latest",
@@ -294,6 +322,9 @@ def parse_init(update_data=None):
         "google_trans_newadd": "",
         "proxy": ""
     }
+    # 确保 videotrans 目录存在
+    Path(ROOT_DIR + "/videotrans").mkdir(parents=True, exist_ok=True)
+
     if not Path(ROOT_DIR + "/videotrans/cfg.json").exists():
         with open(ROOT_DIR + '/videotrans/cfg.json', 'w', encoding='utf-8') as f:
             f.write(json.dumps(default, ensure_ascii=False))
@@ -339,11 +370,11 @@ Path(TEMP_HOME).mkdir(parents=True, exist_ok=True)
 ## 用于 Faster_Whisper_XXL 渠道复制文件中状态标志
 copying = False
 
-# 语言代码文件是否存在
-_lang_path = _root_path / f'videotrans/language/{defaulelang}.json'
+# 语言代码文件是否存在（从数据目录读取）
+_lang_path = _data_path / f'videotrans/language/{defaulelang}.json'
 if not _lang_path.exists():
     defaulelang = "en"
-    _lang_path = _root_path / f'videotrans/language/{defaulelang}.json'
+    _lang_path = _data_path / f'videotrans/language/{defaulelang}.json'
 _obj = json.loads(_lang_path.read_text(encoding='utf-8'))
 # 交互语言代码
 transobj = _obj["translate_language"]
@@ -393,6 +424,10 @@ def getset_params(obj=None):
             f.write(json.dumps(obj, ensure_ascii=False))
         return obj
     # 获取
+    # 创建output目录作为默认保存目录
+    _output_dir = Path(ROOT_DIR) / "output"
+    _output_dir.mkdir(parents=True, exist_ok=True)
+
     default = {
         "last_opendir": HOME_DIR,
         "cuda": False,
@@ -401,12 +436,12 @@ def getset_params(obj=None):
         "only_video": False,
         "is_separate": False,
         "remove_noise": False,
-        "target_dir": "",
-        "source_language": "en",
-        "target_language": "zh-cn",
+        "target_dir": _output_dir.as_posix(),  # 默认保存到output目录
+        "source_language": "英语",  # 默认原语言为英语
+        "target_language": "中文简",  # 默认目标语言为中文简
         "subtitle_language": "chi",
         "translate_type": 0,
-        "subtitle_type": 0,  # embed soft
+        "subtitle_type": 3,  # 默认硬嵌入（双）- 索引3对应embedsubtitle2
         "listen_text_zh-cn": "你好啊，我亲爱的朋友，希望你的每一天都是美好愉快的！",
         "listen_text_zh-tw": "你好啊，我親愛的朋友，希望你的每一天都是美好愉快的！",
         "listen_text_en": "Hello, my dear friend. I hope your every day is beautiful and enjoyable!",
@@ -443,9 +478,13 @@ def getset_params(obj=None):
         "model_name": "large-v3-turbo",  # 模型名
         "recogn_type": 0,  # 语音识别方式，数字代表显示顺序
         "voice_autorate": True,
-        "voice_role": "No",
+        "voice_role": "zh-CN-XiaoxiaoNeural",  # 默认配音角色
         "voice_rate": "0",
         "video_autorate": True,
+        "enable_hearsight": True,  # 默认勾选智能摘要
+        "enable_preprocess": False,  # 视频预处理开关
+        "trim_start": 0,  # 去掉头部秒数
+        "trim_end": 0,  # 去掉尾部秒数
         "deepl_authkey": "",
         "deepl_api": "",
         "deepl_gid": "",
@@ -625,10 +664,10 @@ def getset_params(obj=None):
 
 params = getset_params()
 
-# gemini 语音识别提示词
+# gemini 语音识别提示词（从数据目录读取）
 _gemini_recogn_txt = 'gemini_recogn.txt' if defaulelang == 'zh' else 'gemini_recogn-en.txt'
-if Path(ROOT_DIR + f'/videotrans/{_gemini_recogn_txt}').exists():
-    params['gemini_srtprompt'] = Path(ROOT_DIR + f'/videotrans/{_gemini_recogn_txt}').read_text(encoding='utf-8')
+if Path(DATA_DIR + f'/videotrans/{_gemini_recogn_txt}').exists():
+    params['gemini_srtprompt'] = Path(DATA_DIR + f'/videotrans/{_gemini_recogn_txt}').read_text(encoding='utf-8')
 
 # 加载HearSight配置
 hearsight_config = None

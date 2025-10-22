@@ -3,6 +3,6 @@
 # 向量数据库
 chromadb>=0.4.0
 
-# 注意：其他依赖已经在 pyvideotrans 的 requirements.txt 中包含
+# 注意：其他依赖已经在 BDvideoTrans 的 requirements.txt 中包含
 # - requests (用于 LLM API 调用)
 # - PySide6 (用于 UI)

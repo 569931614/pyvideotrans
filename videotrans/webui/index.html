@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>pyvideotrans - 视频翻译工具</title>
+  <title>BDvideoTrans - 视频翻译工具</title>
   <link rel="stylesheet" href="styles.css" />
   <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
 </head>
 <body>
   <header class="app-header">
-    <h1>🎬 pyvideotrans</h1>
+    <h1>🎬 BDvideoTrans</h1>
     <div class="spacer"></div>
     <button class="btn primary" id="btn-start">开始处理</button>
   </header>
@@ -36,11 +36,29 @@
       </div>
       <div class="row">
         <button class="btn" id="btn-save-dir">💾 选择保存目录</button>
-        <div class="hint" id="save-dir">未选择</div>
+        <div class="hint clickable-path" id="save-dir" title="点击打开文件夹">未选择</div>
       </div>
       <div class="row">
         <label>🌐 代理</label>
         <input id="proxy" type="text" placeholder="http://127.0.0.1:7890" />
+      </div>
+      <div class="row">
+        <label style="width:auto">
+          <input type="checkbox" id="enable-hearsight" />
+          智能摘要
+        </label>
+        <button class="btn-icon" id="btn-hearsight-config" title="智能摘要与向量化配置" style="margin-left:10px">⚙️</button>
+      </div>
+      <div class="row">
+        <!-- 复选框已隐藏，只需填写秒数即可自动处理 -->
+        <label style="width:auto;display:none">
+          <input type="checkbox" id="enable-preprocess" />
+          视频预处理
+        </label>
+        <label>去掉头部(秒) <small>(填写秒数自动处理)</small></label>
+        <input id="trim-start" type="number" min="0" max="3600" step="0.1" value="0" style="width:100px" title="填写秒数自动处理，无需勾选" />
+        <label>去掉尾部(秒)</label>
+        <input id="trim-end" type="number" min="0" max="3600" step="0.1" value="0" style="width:100px" title="填写秒数自动处理，无需勾选" />
       </div>
     </section>
 
@@ -99,7 +117,7 @@
       </div>
       <div class="row">
         <label>配音角色</label>
-        <input id="voice-role" type="text" placeholder="如: zh-CN-XiaoxiaoNeural" />
+        <div id="voice-role-container" style="flex:1"></div>
       </div>
       <div class="row">
         <label>语速调整</label>
@@ -129,10 +147,6 @@
         <label style="width:auto">
           <input type="checkbox" id="enable-cuda" />
           启用 CUDA
-        </label>
-        <label style="width:auto">
-          <input type="checkbox" id="enable-hearsight" />
-          智能摘要
         </label>
       </div>
     </section>

@@ -79,7 +79,7 @@ class Ui_ai302form(object):
         self.label_0.setCursor(QtCore.Qt.PointingHandCursor)
         self.label_0.setStyleSheet("""text-align:left;background-color:transparent""")
         self.label_0.setText('查看填写教程')
-        self.label_0.clicked.connect(lambda: tools.open_url("https://pyvideotrans.com/302ai"))
+        self.label_0.clicked.connect(lambda: tools.show_error("请参考项目文档" if config.defaulelang == 'zh' else "Please refer to the project documentation", False))
 
         h3.addWidget(self.set_ai302)
         h3.addWidget(self.test_ai302)

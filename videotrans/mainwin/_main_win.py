@@ -59,7 +59,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         QTimer.singleShot(50, self._init_sidebar)
 
         self._retranslateUi_from_logic()
-        self.show()
+        self.showMaximized()  # 启动时最大化窗口
         QTimer.singleShot(50, self._set_cache_set)
         QTimer.singleShot(100, self._start_subform)
         QTimer.singleShot(400, self._bindsignal)
@@ -179,8 +179,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.action_ffmpeg.setText("FFmpeg")
         self.action_ffmpeg.setToolTip(config.uilanglist.get("Go FFmpeg website"))
-        self.action_git.setText("Github Repository")
-        self.action_issue.setText(config.uilanglist.get("Post issue"))
+        self.action_git.setText("项目信息" if config.defaulelang == 'zh' else "Project Info")
+        self.action_issue.setText("问题反馈" if config.defaulelang == 'zh' else "Feedback")
         self.actiondeepLX_address.setText("DeepLX Api")
         self.actionott_address.setText("OTT离线翻译Api" if config.defaulelang == 'zh' else "OTT Api")
         self.actionclone_address.setText("clone-voice" if config.defaulelang == 'zh' else "Clone-Voice TTS")
@@ -281,10 +281,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         app = QApplication.instance()
         if not app:
             return
+        # 样式文件是只读数据，从 DATA_DIR 读取
         if name == 'light':
-            css_path = f"{config.ROOT_DIR}/videotrans/styles/style_light.qss"
+            css_path = f"{config.DATA_DIR}/videotrans/styles/style_light.qss"
         else:
-            css_path = f"{config.ROOT_DIR}/videotrans/styles/style.qss"
+            css_path = f"{config.DATA_DIR}/videotrans/styles/style.qss"
         try:
             with open(css_path, 'r', encoding='utf-8') as f:
                 app.setStyleSheet(f.read())
@@ -362,6 +363,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 except Exception:
                     pass
 
+        # Hide the entire menuBar
+        if hasattr(self, 'menuBar'):
+            self.menuBar.setVisible(False)
+
         # Hide the entire toolbar
         if hasattr(self, 'toolBar'):
             self.toolBar.setVisible(False)
@@ -395,7 +400,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.voice_role.addItems(config.params["clone_voicelist"])
             threading.Thread(target=tools.get_clone_role).start()
         elif config.params['tts_type'] == tts.CHATTTS:
-            self.voice_role.addItems(['No'] + list(config.ChatTTS_voicelist))
+            # ChatTTS: 默认选择第一个角色，而不是 No
+            self.voice_role.addItems(list(config.ChatTTS_voicelist) + ['No'])
         elif config.params['tts_type'] == tts.TTS_API:
             self.voice_role.addItems(config.params['ttsapi_voice_role'].strip().split(','))
         elif config.params['tts_type'] == tts.CHATTERBOX_TTS:
@@ -414,19 +420,31 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             rolelist = tools.get_fishtts_role()
             self.voice_role.addItems(list(rolelist.keys()) if rolelist else ['No'])
         elif config.params['tts_type'] == tts.ELEVENLABS_TTS:
+            # ElevenLabs: 默认选择第一个角色，而不是 No
             rolelist = tools.get_elevenlabs_role()
-            self.voice_role.addItems(['No'] + rolelist)
+            self.voice_role.addItems(rolelist + ['No'] if rolelist else ['No'])
         elif config.params['tts_type'] == tts.OPENAI_TTS:
+            # OpenAI TTS: 默认选择第一个角色，而不是 No
             rolelist = config.params.get('openaitts_role', '')
-            self.voice_role.addItems(['No'] + rolelist.split(','))
+            roles = rolelist.split(',') if rolelist else []
+            self.voice_role.addItems(roles + ['No'] if roles else ['No'])
         elif config.params['tts_type'] == tts.QWEN_TTS:
+            # Qwen TTS: 默认选择第一个角色，而不是 No
             rolelist = config.params.get('qwentts_role', '')
-            self.voice_role.addItems(['No'] + rolelist.split(','))
+            roles = rolelist.split(',') if rolelist else []
+            self.voice_role.addItems(roles + ['No'] if roles else ['No'])
         elif config.params['tts_type'] == tts.GEMINI_TTS:
+            # Gemini TTS: 默认选择第一个角色，而不是 No
             rolelist = config.params.get('gemini_ttsrole', '')
-            self.voice_role.addItems(['No'] + rolelist.split(','))
+            roles = rolelist.split(',') if rolelist else []
+            self.voice_role.addItems(roles + ['No'] if roles else ['No'])
         elif self.win_action.change_by_lang(config.params['tts_type']):
+            # Edge-TTS 等需要先选择目标语言的 TTS
             self.voice_role.clear()
+            # 如果没有目标语言，添加提示文本
+            if not config.params.get('target_language') or config.params['target_language'] == '-':
+                self.voice_role.addItems(['请先选择目标语言' if config.defaulelang == 'zh' else 'Select target language first'])
+                self.voice_role.setEnabled(False)
 
         if config.params['target_language'] and config.params['target_language'] in self.languagename:
             self.target_language.setCurrentText(config.params['target_language'])
@@ -435,6 +453,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     config.params['voice_role'] in self.current_rolelist:
                 self.voice_role.setCurrentText(config.params['voice_role'])
                 self.win_action.show_listen_btn(config.params['voice_role'])
+
+        # 统一处理：如果当前选中的是 No 或提示文本，自动选择第一个真实角色
+        if self.voice_role.count() > 0:
+            current_text = self.voice_role.currentText()
+            if current_text in ['No', '请先选择目标语言', 'Select target language first', '']:
+                self.voice_role.setCurrentIndex(0)
 
         # Add HTML UI toggle on toolbar
         try:
@@ -556,6 +580,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.only_video.setChecked(True if config.params['only_video'] else False)
         self.is_separate.setChecked(True if config.params['is_separate'] else False)
 
+        # 视频预处理设置（复选框已隐藏，只需填写秒数即可自动处理）
+        self.enable_preprocess.setChecked(bool(config.params.get('enable_preprocess', False)))  # 保留以兼容旧配置
+        self.trim_start.setValue(float(config.params.get('trim_start', 0)))
+        self.trim_end.setValue(float(config.params.get('trim_end', 0)))
+
         local_rephrase=config.settings.get('rephrase_local',False)
         self.rephrase_local.setChecked(local_rephrase)
         self.rephrase.setChecked(config.settings.get('rephrase',False) if not local_rephrase else False)
@@ -581,6 +610,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.startbtn.clicked.connect(self.win_action.check_start)
         self.btn_save_dir.clicked.connect(self.win_action.get_save_dir)
+        self.save_dir_label.clicked.connect(self.win_action.open_save_dir)
         self.btn_get_video.clicked.connect(self.win_action.get_mp4)
         self.stop_djs.clicked.connect(self.win_action.reset_timeid)
         self.continue_compos.clicked.connect(self.win_action.set_djs_timeout)
@@ -596,6 +626,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.translate_set_btn.clicked.connect(self.open_translate_settings)
         self.tts_set_btn.clicked.connect(self.open_tts_settings)
         self.recogn_set_btn.clicked.connect(self.open_recogn_settings)
+        self.voice_role_select_btn.clicked.connect(self.open_voice_role_selection)
 
         self.label.clicked.connect(lambda: tools.open_url(url='about:blank'))
         self.hfaster_help.clicked.connect(lambda: tools.open_url(url='about:blank'))
@@ -808,16 +839,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     self.hearsight_config = json.load(f)
                     # 同时保存到全局config对象，供trans_create.py使用
                     config.hearsight_config = self.hearsight_config
-                    print(f"✅ HearSight配置加载成功")
+                    print(f"✅ 智能摘要配置加载成功")
             except Exception as e:
-                print(f"加载HearSight配置失败: {e}")
+                print(f"加载智能摘要配置失败: {e}")
 
         # 添加按钮到工具栏
         try:
             self.hearsight_btn = QPushButton("🎯 智能摘要")
             self.hearsight_btn.setToolTip(
-                "基于Whisper识别结果生成智能段落划分和LLM摘要\n"
-                "需要先完成语音识别并生成SRT字幕"
+                "导入SRT字幕文件生成智能段落划分和摘要"
             )
             self.hearsight_btn.setStyleSheet("""
                 QPushButton {
@@ -845,7 +875,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             # 配置按钮
             self.hearsight_config_btn = QPushButton("⚙️")
-            self.hearsight_config_btn.setToolTip("HearSight配置")
+            self.hearsight_config_btn.setToolTip("智能摘要配置")
             self.hearsight_config_btn.setFixedSize(42, 42)
             self.hearsight_config_btn.setStyleSheet("""
                 QPushButton {
@@ -901,7 +931,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             #     self.toolBar.addWidget(self.summary_manager_btn)
 
         except Exception as e:
-            print(f"初始化HearSight按钮失败: {e}")
+            print(f"初始化智能摘要按钮失败: {e}")
 
     def _init_sidebar(self):
         """初始化垂直侧边栏"""
@@ -1104,6 +1134,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 "当前识别渠道无需配置" if config.defaulelang == 'zh' else "Current recognition channel does not require configuration"
             )
 
+    def open_voice_role_selection(self):
+        """打开配音角色选择窗口"""
+        from videotrans import winform
+        winform.get_win('fn_peiyinrole').openwin()
+
     def _load_hearsight_config(self):
         """加载HearSight配置"""
         import json
@@ -1201,7 +1236,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             # 创建进度对话框
             progress = QProgressDialog("正在处理...", "取消", 0, 100, self)
             progress.setWindowModality(Qt.WindowModal)
-            progress.setWindowTitle("HearSight处理中")
+            progress.setWindowTitle("智能摘要处理中")
             progress.setMinimumDuration(0)
             progress.setValue(0)
 
@@ -1232,7 +1267,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.hearsight_processor.start()
 
         except Exception as e:
-            QMessageBox.critical(self, "错误", f"启动HearSight处理失败：\n{str(e)}")
+            QMessageBox.critical(self, "错误", f"启动智能摘要处理失败：\n{str(e)}")
 
     def _update_hearsight_progress(self, progress_dialog, text, percent):
         """更新进度"""
@@ -1243,9 +1278,105 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """显示处理结果 - 在右侧窗口显示"""
         from videotrans.ui.hearsight_viewer import SummaryViewerWidget
         from PySide6.QtWidgets import QMessageBox
+        from videotrans.hearsight.vector_store import get_vector_store
+        import os
 
         try:
             progress_dialog.close()
+
+            # 存储到向量数据库
+            try:
+                print(f"🔍 [DEBUG] Starting vector store process...")
+                print(f"🔍 [DEBUG] video_path: {video_path}")
+                print(f"🔍 [DEBUG] summary type: {type(summary)}, content: {summary}")
+                print(f"🔍 [DEBUG] paragraphs count: {len(paragraphs) if paragraphs else 0}")
+
+                vector_store = get_vector_store()
+                print(f"🔍 [DEBUG] vector_store obtained: {vector_store}")
+
+                # 准备元数据
+                metadata = {
+                    'basename': os.path.basename(video_path) if video_path else 'unknown',
+                    'source_language': config.params.get('source_language_code', ''),
+                    'target_language': config.params.get('target_language_code', ''),
+                    'app_mode': config.params.get('app_mode', '')
+                }
+                print(f"🔍 [DEBUG] metadata: {metadata}")
+
+                # 存储摘要
+                print(f"🔍 [DEBUG] Calling store_summary...")
+                success = vector_store.store_summary(
+                    video_path=video_path or 'unknown',
+                    summary=summary,
+                    paragraphs=paragraphs,
+                    metadata=metadata
+                )
+                print(f"🔍 [DEBUG] store_summary returned: {success}")
+
+                if success:
+                    config.logger.info(f"✅ Successfully stored summary in vector database")
+                    print(f"✅ Successfully stored summary in vector database")
+                else:
+                    config.logger.warning(f"⚠️ Failed to store summary in vector database")
+                    print(f"⚠️ Failed to store summary in vector database")
+            except Exception as e:
+                config.logger.error(f"❌ Error storing summary to vector database: {e}")
+                print(f"❌ Error storing summary to vector database: {e}")
+                import traceback
+                traceback.print_exc()
+
+            # 存储到 PostgreSQL 数据库
+            try:
+                from videotrans.hearsight import pg_store
+
+                if pg_store.is_enabled():
+                    print(f"🗄️ [DEBUG] Starting PostgreSQL store process...")
+
+                    # 将 paragraphs 转换为 segments 格式以便存储
+                    segments = []
+                    for i, para in enumerate(paragraphs):
+                        segments.append({
+                            'index': i,
+                            'start_time': para.get('start_time', 0.0),
+                            'end_time': para.get('end_time', 0.0),
+                            'text': para.get('text', ''),
+                            'summary': para.get('summary', '')
+                        })
+
+                    # 保存转写记录
+                    transcript_id = pg_store.save_transcript(
+                        media_path=video_path or 'unknown',
+                        segments=segments
+                    )
+
+                    if transcript_id:
+                        # 保存摘要
+                        summaries_list = [{
+                            'topic': summary.get('topic', ''),
+                            'summary': summary.get('summary', ''),
+                            'paragraph_count': len(paragraphs),
+                            'total_duration': summary.get('total_duration', 0.0)
+                        }]
+
+                        summary_id = pg_store.save_summaries(
+                            transcript_id=transcript_id,
+                            summaries=summaries_list
+                        )
+
+                        if summary_id:
+                            config.logger.info(f"✅ Successfully stored data in PostgreSQL: transcript_id={transcript_id}, summary_id={summary_id}")
+                            print(f"✅ Successfully stored data in PostgreSQL")
+                        else:
+                            config.logger.warning(f"⚠️ Failed to store summaries in PostgreSQL")
+                    else:
+                        config.logger.warning(f"⚠️ Failed to store transcript in PostgreSQL")
+                else:
+                    print(f"ℹ️ PostgreSQL storage is not enabled (missing configuration)")
+            except Exception as e:
+                config.logger.error(f"❌ Error storing data to PostgreSQL: {e}")
+                print(f"❌ Error storing data to PostgreSQL: {e}")
+                import traceback
+                traceback.print_exc()
 
             # 创建或更新HearSight视图组件
             if not hasattr(self, 'hearsight_viewer_widget'):
@@ -1263,7 +1394,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             if hasattr(self, '_central_stack') and self._central_stack:
                 self._central_stack.setCurrentWidget(self.hearsight_viewer_widget)
 
-            QMessageBox.information(self, "成功", "HearSight处理完成！\n结果已显示在右侧窗口。")
+            QMessageBox.information(self, "成功", "智能摘要处理完成！\n结果已显示在右侧窗口。")
 
         except Exception as e:
             QMessageBox.critical(self, "错误", f"显示结果失败：\n{str(e)}")
@@ -1275,7 +1406,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         progress_dialog.close()
         QMessageBox.critical(
             self,
-            "HearSight处理失败",
+            "智能摘要处理失败",
             f"处理过程中发生错误：\n\n{error}\n\n"
             "请检查：\n"
             "1. SRT文件格式是否正确\n"

@@ -45,7 +45,7 @@ class AI302(BaseTrans):
         response = requests.post('https://api.302.ai/v1/chat/completions', headers={
             'Accept': 'application/json',
             'Authorization': f'Bearer {config.params["ai302_key"]}',
-            'User-Agent': 'pyvideotrans',
+            'User-Agent': 'BDvideoTrans',
             'Content-Type': 'application/json'
         }, json=payload, verify=False, proxies=self.proxies)
 

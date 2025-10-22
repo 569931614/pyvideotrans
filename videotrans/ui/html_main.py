@@ -41,7 +41,7 @@ class HtmlMainView(QWidget):
             self.setDisabled(True)
             return
 
-        # Add debug toolbar
+        # Add debug toolbar (临时启用以调试)
         toolbar = QHBoxLayout()
         toolbar.setContentsMargins(5, 5, 5, 5)
 
@@ -85,8 +85,8 @@ class HtmlMainView(QWidget):
         # Capture console messages
         self.web.page().javaScriptConsoleMessage = self.handle_js_console
 
-        # Load local index.html
-        html_path = os.path.join(config.ROOT_DIR, "videotrans", "webui", "index.html")
+        # Load local index.html (webui 是只读数据，从 DATA_DIR 读取)
+        html_path = os.path.join(config.DATA_DIR, "videotrans", "webui", "index.html")
         print(f"Loading HTML UI from: {html_path}")
         if not os.path.exists(html_path):
             print(f"ERROR: HTML file not found at {html_path}")
