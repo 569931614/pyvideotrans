@@ -4,6 +4,7 @@
 使用 ChromaDB 存储视频摘要和段落内容，支持语义检索
 """
 import os
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 import hashlib
 import json
@@ -103,10 +104,15 @@ class VectorStore:
         try:
             video_id = self._generate_video_id(video_path)
 
-            # 准备文档、元数据和ID
-            documents = []
-            metadatas = []
-            ids = []
+            documents: List[str] = []
+            metadatas: List[Dict[str, Any]] = []
+            ids: List[str] = []
+
+            # 清理旧数据以避免重复ID
+            try:
+                self.collection.delete(where={"video_id": video_id})
+            except Exception as delete_err:
+                print(f"[vector] 删除旧向量数据失败: {delete_err}")
 
             # 1. 存储整体摘要
             overall_doc = f"主题: {summary.get('topic', '')}\n总结: {summary.get('summary', '')}"
@@ -132,7 +138,6 @@ class VectorStore:
                 para_text = para.get('text', '')
                 para_summary = para.get('summary', '')
 
-                # 组合段落文本和摘要
                 if para_summary:
                     para_doc = f"段落摘要: {para_summary}\n完整内容: {para_text}"
                 else:
@@ -153,24 +158,25 @@ class VectorStore:
                 if para_summary:
                     para_meta["paragraph_summary"] = para_summary
 
+                if metadata:
+                    para_meta.update(metadata)
+
                 metadatas.append(para_meta)
                 ids.append(f"{video_id}_para_{i}")
 
-            # 批量添加到 ChromaDB
             self.collection.add(
                 documents=documents,
                 metadatas=metadatas,
                 ids=ids
             )
 
-            print(f"✅ 成功存储视频摘要: {os.path.basename(video_path)}")
-            print(f"   - 整体摘要: 1 条")
-            print(f"   - 段落摘要: {len(paragraphs)} 条")
+            print(f"[vector] 成功存储视频摘要: {os.path.basename(video_path)}")
+            print(f"         段落数量: {len(paragraphs)}")
 
             return True
 
         except Exception as e:
-            print(f"❌ 存储摘要失败: {e}")
+            print(f"[vector] 存储摘要失败: {e}")
             import traceback
             traceback.print_exc()
             return False
@@ -234,7 +240,7 @@ class VectorStore:
             return formatted_results
 
         except Exception as e:
-            print(f"❌ 搜索失败: {e}")
+            print(f"[vector] 搜索失败: {e}")
             return []
 
     def delete_video(self, video_path: str) -> bool:
@@ -262,14 +268,14 @@ class VectorStore:
             if results and 'ids' in results:
                 # 删除所有相关文档
                 self.collection.delete(ids=results['ids'])
-                print(f"✅ 已删除视频摘要: {os.path.basename(video_path)}")
+                print(f"[vector] 已删除视频摘要: {os.path.basename(video_path)}")
                 return True
             else:
-                print(f"⚠️ 未找到视频摘要: {os.path.basename(video_path)}")
+                print(f"[vector] 未找到视频摘要: {os.path.basename(video_path)}")
                 return False
 
         except Exception as e:
-            print(f"❌ 删除失败: {e}")
+            print(f"[vector] 删除失败: {e}")
             return False
 
     def get_video_summary(self, video_path: str) -> Optional[Dict[str, Any]]:
@@ -326,7 +332,7 @@ class VectorStore:
             return result
 
         except Exception as e:
-            print(f"❌ 获取摘要失败: {e}")
+            print(f"[vector] 获取摘要失败: {e}")
             return None
 
     def list_all_videos(self) -> List[Dict[str, Any]]:
@@ -360,7 +366,7 @@ class VectorStore:
             return videos
 
         except Exception as e:
-            print(f"❌ 列出视频失败: {e}")
+            print(f"[vector] 列出视频失败: {e}")
             return []
 
 
@@ -374,58 +380,69 @@ def get_vector_store(persist_directory: str = None, force_backend: str = None):
 
     Args:
         persist_directory: 持久化目录路径
-        force_backend: 强制使用的后端 ('chromadb' 或 'volcengine')
+        force_backend: 强制使用的后端('chromadb', 'volcengine', 'postgresql')
 
     Returns:
-        VectorStore 或 VolcengineVectorClient: 向量存储实例
+        VectorStore, VolcengineVectorClient 或 PostgreSQLVectorStore: 向量存储实例
     """
     global _vector_store
 
-    if _vector_store is None:
-        from videotrans.configure import config
+    from videotrans.configure import config
 
-        # 确定使用哪个后端
-        backend = force_backend
-        if backend is None:
-            # 从配置中读取
-            hearsight_cfg = getattr(config, 'hearsight_config', {})
-            vector_cfg = hearsight_cfg.get('vector', {})
-            backend = vector_cfg.get('type', 'chromadb')
+    backend = force_backend
+    if backend is None:
+        hearsight_cfg = getattr(config, 'hearsight_config', {})
+        vector_cfg = hearsight_cfg.get('vector', {})
+        backend = vector_cfg.get('type', 'chromadb')
 
-        # 根据backend创建实例
-        if backend == 'volcengine':
-            print("📊 使用火山引擎向量化服务")
+    if backend == 'postgresql':
+        from videotrans.hearsight.postgresql_vector_store import PostgreSQLVectorStore
 
-            vector_cfg = getattr(config, 'hearsight_config', {}).get('vector', {})
-            volc_cfg = vector_cfg.get('volcengine', {})
+        # 获取数据库配置（正确路径：vector.database）
+        hearsight_cfg = getattr(config, 'hearsight_config', {})
+        db_config = hearsight_cfg.get('vector', {}).get('database', {})
 
-            from videotrans.hearsight.volcengine_vector import VolcengineVectorClient
+        if not isinstance(_vector_store, PostgreSQLVectorStore):
+            print('[vector] Using PostgreSQL vector backend')
+            _vector_store = PostgreSQLVectorStore(db_config)
+            _vector_store.initialize()
+        return _vector_store
 
+    if backend == 'volcengine':
+        vector_cfg = getattr(config, 'hearsight_config', {}).get('vector', {})
+        volc_cfg = vector_cfg.get('volcengine', {})
+
+        from videotrans.hearsight.volcengine_vector import VolcengineVectorClient
+
+        if not isinstance(_vector_store, VolcengineVectorClient):
+            print('[vector] Using volcengine vector backend')
             _vector_store = VolcengineVectorClient(
                 api_key=volc_cfg.get('api_key', ''),
                 base_url=volc_cfg.get('base_url', 'https://ark.cn-beijing.volces.com/api/v3'),
                 collection_name=volc_cfg.get('collection_name', 'video_summaries'),
                 embedding_model=volc_cfg.get('embedding_model', '')
             )
-        else:
-            print("📊 使用ChromaDB本地向量存储")
+        return _vector_store
 
-            # 优先使用传入的persist_directory，其次使用配置文件中的，最后使用默认路径
-            if persist_directory is None:
-                hearsight_cfg = getattr(config, 'hearsight_config', {})
-                vector_cfg = hearsight_cfg.get('vector', {})
-                persist_directory = vector_cfg.get('persist_directory')
+    # 默认使用 chromadb
+    env_dir = os.environ.get('HEARSIGHT_VECTOR_DB_DIR')
+    if persist_directory is None:
+        persist_directory = env_dir
+    if persist_directory is None:
+        hearsight_cfg = getattr(config, 'hearsight_config', {})
+        vector_cfg = hearsight_cfg.get('vector', {})
+        persist_directory = vector_cfg.get('persist_directory')
+    if persist_directory is None:
+        persist_directory = os.path.join(config.ROOT_DIR, 'vector_db')
 
-                if persist_directory is None:
-                    persist_directory = os.path.join(config.ROOT_DIR, 'vector_db')
-
-                print(f"📁 向量库路径: {persist_directory}")
-
-            _vector_store = VectorStore(persist_directory)
-            _vector_store.initialize()
+    persist_directory = str(persist_directory)
+    if not isinstance(_vector_store, VectorStore) or _vector_store.persist_directory != persist_directory:
+        print('[vector] Using local ChromaDB vector backend')
+        print(f'[vector] Vector DB path: {persist_directory}')
+        _vector_store = VectorStore(persist_directory)
+        _vector_store.initialize()
 
     return _vector_store
-
 
 def reset_vector_store():
     """重置全局向量存储实例（用于切换后端）"""

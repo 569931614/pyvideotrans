@@ -20,7 +20,7 @@ class CustomTextBrowser(QTextBrowser):
 
     def setSource(self, url):
         """重写setSource，阻止默认的链接导航行为"""
-        print(f"⚠️ CustomTextBrowser.setSource被调用: {url.toString()}")
+        print(f"[CustomTextBrowser] setSource被调用: {url.toString()}")
         print(f"   不执行默认行为，保持内容不变")
         # 不调用父类的setSource，阻止默认行为
         # 这样点击链接不会尝试加载新内容
@@ -28,7 +28,7 @@ class CustomTextBrowser(QTextBrowser):
 
     def loadResource(self, type, url):
         """重写loadResource，阻止资源加载"""
-        print(f"⚠️ CustomTextBrowser.loadResource被调用: type={type}, url={url.toString()}")
+        print(f"[CustomTextBrowser] loadResource被调用: type={type}, url={url.toString()}")
         print(f"   不加载资源，返回空")
         # 返回空，不加载任何资源
         from PySide6.QtCore import QByteArray
@@ -88,7 +88,7 @@ class SummaryManagerDialog(QDialog):
 
         # 标题区域
         title_layout = QHBoxLayout()
-        title_label = QLabel("  📚  视频摘要库")
+        title_label = QLabel("  [摘要库]  视频摘要库")
         title_label.setStyleSheet("""
             font-size: 22px;
             font-weight: bold;
@@ -102,7 +102,7 @@ class SummaryManagerDialog(QDialog):
         title_layout.addWidget(title_label)
 
         # 刷新按钮
-        self.refresh_btn = QPushButton("🔄 刷新")
+        self.refresh_btn = QPushButton("[刷新] 刷新")
         self.refresh_btn.setFixedSize(110, 44)
         self.refresh_btn.setStyleSheet("""
             QPushButton {
@@ -131,7 +131,7 @@ class SummaryManagerDialog(QDialog):
 
         # 搜索区域
         search_layout = QHBoxLayout()
-        search_label = QLabel("🔍 语义搜索:")
+        search_label = QLabel("[搜索] 语义搜索:")
         search_label.setStyleSheet("""
             font-size: 15px;
             font-weight: bold;
@@ -261,7 +261,7 @@ class SummaryManagerDialog(QDialog):
         button_layout = QHBoxLayout()
         button_layout.addStretch()
 
-        self.export_btn = QPushButton("📥 导出Markdown")
+        self.export_btn = QPushButton("[导出] 导出Markdown")
         self.export_btn.setEnabled(False)
         self.export_btn.setStyleSheet("""
             QPushButton {
@@ -287,7 +287,7 @@ class SummaryManagerDialog(QDialog):
         self.export_btn.clicked.connect(self.export_current)
         button_layout.addWidget(self.export_btn)
 
-        self.delete_btn = QPushButton("🗑️ 删除")
+        self.delete_btn = QPushButton("[删除] 删除")
         self.delete_btn.setEnabled(False)
         self.delete_btn.setStyleSheet("""
             QPushButton {
@@ -345,7 +345,7 @@ class SummaryManagerDialog(QDialog):
         layout.setContentsMargins(0, 0, 0, 0)
 
         # 标题
-        label = QLabel("  📹  视频列表")
+        label = QLabel("  [视频列表]  视频列表")
         label.setStyleSheet("""
             font-size: 16px;
             font-weight: bold;
@@ -458,7 +458,7 @@ class SummaryManagerDialog(QDialog):
                 line-height: 2.0;
             }
         """)
-        self.tab_widget.addTab(self.summary_tab, "📋 整体摘要")
+        self.tab_widget.addTab(self.summary_tab, "[摘要] 整体摘要")
 
         # Tab 2: 段落列表
         # 使用QTextEdit而不是QTextBrowser，避免链接处理问题
@@ -477,7 +477,7 @@ class SummaryManagerDialog(QDialog):
                 line-height: 1.9;
             }
         """)
-        self.tab_widget.addTab(self.paragraph_tab, "📝 段落详情")
+        self.tab_widget.addTab(self.paragraph_tab, "[段落] 段落详情")
 
         # Tab 3: 搜索结果
         self.search_results_tab = QTextEdit()
@@ -492,7 +492,7 @@ class SummaryManagerDialog(QDialog):
                 line-height: 1.9;
             }
         """)
-        self.tab_widget.addTab(self.search_results_tab, "🔍 搜索结果")
+        self.tab_widget.addTab(self.search_results_tab, "[搜索] 搜索结果")
 
         layout.addWidget(self.tab_widget)
 
@@ -501,7 +501,7 @@ class SummaryManagerDialog(QDialog):
     def load_videos(self):
         """加载视频列表"""
         import traceback
-        print(f"\n📋 load_videos() 被调用")
+        print(f"\n[load_videos] 被调用")
         print(f"   调用堆栈:")
         for line in traceback.format_stack()[:-1]:
             print(f"   {line.strip()}")
@@ -522,7 +522,7 @@ class SummaryManagerDialog(QDialog):
                 duration_str = f"{int(duration//60)}:{int(duration%60):02d}"
 
                 # 创建列表项
-                item_text = f"🎬 {topic}\n   📊 {para_count}段 | ⏱ {duration_str}"
+                item_text = f"[视频] {topic}\n   [段落] {para_count}段 | [时长] {duration_str}"
                 item = QListWidgetItem(item_text)
                 item.setData(Qt.UserRole, video)
                 self.video_list.addItem(item)
@@ -531,7 +531,7 @@ class SummaryManagerDialog(QDialog):
             self.stats_label.setText(f"总计: {len(self.videos)} 个视频")
 
             # 清空详情
-            print(f"⚠️ 清空段落详情（load_videos）")
+            print(f"[load_videos] 清空段落详情（load_videos）")
             self.summary_tab.clear()
             self.paragraph_tab.clear()
             self.current_video = None
@@ -596,9 +596,9 @@ class SummaryManagerDialog(QDialog):
                             border-radius: 10px;
                             border: 2px solid #2a3244;">
                     <span style="color: #a0abc0; font-size: 15px;">
-                        <b style="color: #6366f1;">📊 段落数</b>: {para_count} &nbsp;&nbsp;|&nbsp;&nbsp;
-                        <b style="color: #6366f1;">⏱ 总时长</b>: {duration_str} &nbsp;&nbsp;|&nbsp;&nbsp;
-                        <b style="color: #6366f1;">📁 文件</b>: {os.path.basename(video_path)}
+                        <b style="color: #6366f1;">[段落数]</b>: {para_count} &nbsp;&nbsp;|&nbsp;&nbsp;
+                        <b style="color: #6366f1;">[总时长]</b>: {duration_str} &nbsp;&nbsp;|&nbsp;&nbsp;
+                        <b style="color: #6366f1;">[文件]</b>: {os.path.basename(video_path)}
                     </span>
                 </div>
             </div>
@@ -642,13 +642,13 @@ class SummaryManagerDialog(QDialog):
                             border-left: 4px solid #6366f1;">
                     <div style="margin-bottom: 12px;">
                         <span style="color: #a78bfa; font-weight: bold; font-size: 15px;">
-                            📍 段落 {i}
+                            [段落 {i}]
                         </span>
                         <a href="{time_link}" style="color: #60a5fa; font-size: 14px; margin-left: 12px;
                            text-decoration: none; cursor: pointer; padding: 4px 10px;
                            background: rgba(96, 165, 250, 0.1); border-radius: 6px;
                            border: 1px solid rgba(96, 165, 250, 0.3);">
-                            ▶️ {start_str} - {end_str}
+                            [播放] {start_str} - {end_str}
                         </a>
                     </div>
                 """
@@ -662,7 +662,7 @@ class SummaryManagerDialog(QDialog):
                                 border-left: 3px solid #f59e0b;
                                 border: 2px solid #3d2f15;">
                         <div style="color: #fbbf24; font-weight: bold; font-size: 14px; margin-bottom: 6px;">
-                            💡 摘要
+                            [摘要]
                         </div>
                         <div style="color: #fde68a; font-size: 14px; line-height: 1.8;">
                             {para_summary}
@@ -681,9 +681,9 @@ class SummaryManagerDialog(QDialog):
                 paragraphs_html += "</div>"
 
             paragraphs_html += "</div>"
-            print(f"📝 设置段落HTML内容，长度: {len(paragraphs_html)}")
+            print(f"[设置段落] HTML内容长度: {len(paragraphs_html)}")
             self.paragraph_tab.setHtml(paragraphs_html)
-            print(f"📝 设置后段落详情内容长度: {len(self.paragraph_tab.toPlainText())}")
+            print(f"[设置段落] 设置后段落详情内容长度: {len(self.paragraph_tab.toPlainText())}")
 
         except Exception as e:
             QMessageBox.critical(self, "错误", f"加载视频详情失败：\n{str(e)}")
@@ -737,10 +737,10 @@ class SummaryManagerDialog(QDialog):
 
             # 提取内容
             if meta.get('type') == 'overall_summary':
-                content_type = "📋 整体摘要"
+                content_type = "[摘要] 整体摘要"
                 time_info = ""
             else:
-                content_type = "📝 段落内容"
+                content_type = "[段落] 段落内容"
                 start = meta.get('start_time', 0)
                 end = meta.get('end_time', 0)
                 start_str = f"{int(start//60):02d}:{int(start%60):02d}"
@@ -786,7 +786,7 @@ class SummaryManagerDialog(QDialog):
                     </span>
                 </div>
                 <div style="color: #a78bfa; font-weight: bold; font-size: 15px; margin-bottom: 8px;">
-                    🎬 {video_name}
+                    [视频] {video_name}
                     {time_info}
                 </div>
                 <div style="color: #a0abc0; font-size: 14px; line-height: 1.8;">
@@ -947,9 +947,9 @@ class SummaryManagerDialog(QDialog):
                 time_str = url.path().strip('/')
 
                 # 调试信息
-                print(f"🔍 Debug: URL scheme = {url.scheme()}")
-                print(f"🔍 Debug: URL path = {url.path()}")
-                print(f"🔍 Debug: time_str = '{time_str}'")
+                print(f"[Debug] URL scheme = {url.scheme()}")
+                print(f"[Debug] URL path = {url.path()}")
+                print(f"[Debug] time_str = '{time_str}'")
 
                 # 尝试转换为浮点数
                 try:
@@ -974,14 +974,14 @@ class SummaryManagerDialog(QDialog):
                     return
 
                 # 播放视频并跳转到指定时间
-                print(f"📝 播放前段落详情内容长度: {len(self.paragraph_tab.toPlainText())}")
+                print(f"[播放] 播放前段落详情内容长度: {len(self.paragraph_tab.toPlainText())}")
                 self.play_video_at_time(self.current_video_path, start_time)
-                print(f"📝 播放后段落详情内容长度: {len(self.paragraph_tab.toPlainText())}")
+                print(f"[播放] 播放后段落详情内容长度: {len(self.paragraph_tab.toPlainText())}")
 
             except Exception as e:
                 import traceback
                 error_detail = traceback.format_exc()
-                print(f"❌ 异常后段落详情内容长度: {len(self.paragraph_tab.toPlainText())}")
+                print(f"[错误] 异常后段落详情内容长度: {len(self.paragraph_tab.toPlainText())}")
                 QMessageBox.critical(
                     self,
                     "错误",
@@ -998,12 +998,12 @@ class SummaryManagerDialog(QDialog):
         Returns:
             目标视频路径，如果找不到则返回原始路径
         """
-        print(f"\n🔍 开始查找目标视频...")
+        print(f"\n[查找目标视频] 开始查找目标视频...")
         print(f"   原始路径: {source_video_path}")
 
         # 检查原始视频是否存在
         if not os.path.exists(source_video_path):
-            print(f"   ⚠️ 原始视频不存在！")
+            print(f"   [警告] 原始视频不存在！")
             return source_video_path
 
         # 获取视频目录和文件名
@@ -1023,10 +1023,10 @@ class SummaryManagerDialog(QDialog):
         print(f"\n   [标准位置] 检查翻译输出目录:")
         print(f"   {standard_target_path}")
         if os.path.exists(standard_target_path):
-            print(f"   ✅ 找到翻译后的视频（标准位置）: {standard_target_path}")
+            print(f"   [成功] 找到翻译后的视频（标准位置）: {standard_target_path}")
             return standard_target_path
         else:
-            print(f"   ⚠️ 标准位置不存在")
+            print(f"   [警告] 标准位置不存在")
 
         # 2. 检查同目录下的常见命名模式
         target_patterns = [
@@ -1042,13 +1042,13 @@ class SummaryManagerDialog(QDialog):
             target_path = os.path.join(video_dir, pattern)
             print(f"   [{i}] 检查: {os.path.basename(target_path)}")
             if os.path.exists(target_path):
-                print(f"   ✅ 找到目标视频（同目录）: {target_path}")
+                print(f"   [成功] 找到目标视频（同目录）: {target_path}")
                 return target_path
             else:
                 print(f"       不存在")
 
         # 如果找不到，返回原始视频
-        print(f"\n   ⚠️ 未找到翻译后的视频，使用原始视频: {source_video_path}")
+        print(f"\n   [警告] 未找到翻译后的视频，使用原始视频: {source_video_path}")
         return source_video_path
 
     def play_video_at_time(self, video_path: str, start_time: float):
@@ -1060,14 +1060,14 @@ class SummaryManagerDialog(QDialog):
             start_time: 开始时间（秒）
         """
         try:
-            print(f"\n▶️ 准备播放视频...")
+            print(f"\n[播放视频] 准备播放视频...")
             print(f"   视频路径: {video_path}")
             print(f"   开始时间: {start_time}秒")
 
             # 查找翻译后的目标视频
             target_video = self.find_target_video(video_path)
 
-            print(f"\n🎬 打开播放器...")
+            print(f"\n[播放视频] 打开播放器...")
             print(f"   最终视频: {target_video}")
             print(f"   跳转时间: {start_time}秒")
 
@@ -1091,7 +1091,7 @@ class SummaryManagerDialog(QDialog):
         except Exception as e:
             import traceback
             error_detail = traceback.format_exc()
-            print(f"\n❌ 播放失败: {e}")
+            print(f"\n[错误] 播放失败: {e}")
             print(error_detail)
             QMessageBox.critical(
                 self,

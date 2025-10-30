@@ -839,13 +839,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     self.hearsight_config = json.load(f)
                     # 同时保存到全局config对象，供trans_create.py使用
                     config.hearsight_config = self.hearsight_config
-                    print(f"✅ 智能摘要配置加载成功")
+                    print(f"[OK] 智能摘要配置加载成功")
             except Exception as e:
                 print(f"加载智能摘要配置失败: {e}")
 
         # 添加按钮到工具栏
         try:
-            self.hearsight_btn = QPushButton("🎯 智能摘要")
+            self.hearsight_btn = QPushButton("[摘要] 智能摘要")
             self.hearsight_btn.setToolTip(
                 "导入SRT字幕文件生成智能段落划分和摘要"
             )
@@ -967,10 +967,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             # 替换中央部件
             self.setCentralWidget(main_container)
 
-            print("✅ 侧边栏初始化成功")
+            print("[OK] 侧边栏初始化成功")
 
         except Exception as e:
-            print(f"❌ 侧边栏初始化失败: {e}")
+            print(f"[ERROR] 侧边栏初始化失败: {e}")
             import traceback
             traceback.print_exc()
 
@@ -1275,129 +1275,141 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         progress_dialog.setValue(percent)
 
     def _show_hearsight_result(self, progress_dialog, summary, paragraphs, video_path=None):
-        """显示处理结果 - 在右侧窗口显示"""
+        '''Display processing result inside the right panel.'''
         from videotrans.ui.hearsight_viewer import SummaryViewerWidget
         from PySide6.QtWidgets import QMessageBox
         from videotrans.hearsight.vector_store import get_vector_store
+        from pathlib import Path
         import os
+        import shutil
 
         try:
             progress_dialog.close()
 
-            # 存储到向量数据库
-            try:
-                print(f"🔍 [DEBUG] Starting vector store process...")
-                print(f"🔍 [DEBUG] video_path: {video_path}")
-                print(f"🔍 [DEBUG] summary type: {type(summary)}, content: {summary}")
-                print(f"🔍 [DEBUG] paragraphs count: {len(paragraphs) if paragraphs else 0}")
+            shared_dir = os.environ.get('HEARSIGHT_SHARED_MEDIA_DIR')
+            static_base_url = os.environ.get('HEARSIGHT_STATIC_BASE_URL', '/static').rstrip('/')
+            shared_video_path = None
+            original_video_path = video_path
 
-                vector_store = get_vector_store()
-                print(f"🔍 [DEBUG] vector_store obtained: {vector_store}")
+            if video_path and shared_dir:
+                try:
+                    src_path = Path(video_path).resolve()
+                    target_dir = Path(shared_dir).resolve()
+                    target_dir.mkdir(parents=True, exist_ok=True)
+                    candidate = target_dir / src_path.name
+                    if not candidate.exists():
+                        try:
+                            os.link(src_path, candidate)
+                        except Exception:
+                            shutil.copy2(src_path, candidate)
+                    shared_video_path = str(candidate.resolve())
+                except Exception as copy_error:
+                    print(f"[hearsight] failed to copy media into shared directory: {copy_error}")
 
-                # 准备元数据
-                metadata = {
-                    'basename': os.path.basename(video_path) if video_path else 'unknown',
-                    'source_language': config.params.get('source_language_code', ''),
-                    'target_language': config.params.get('target_language_code', ''),
-                    'app_mode': config.params.get('app_mode', '')
-                }
-                print(f"🔍 [DEBUG] metadata: {metadata}")
+            video_for_storage = shared_video_path or video_path or 'unknown'
+            static_url = None
+            if shared_video_path:
+                static_url = f"{static_base_url}/{Path(shared_video_path).name}"
+            elif video_path:
+                static_url = f"{static_base_url}/{Path(video_path).name}"
 
-                # 存储摘要
-                print(f"🔍 [DEBUG] Calling store_summary...")
-                success = vector_store.store_summary(
-                    video_path=video_path or 'unknown',
-                    summary=summary,
-                    paragraphs=paragraphs,
-                    metadata=metadata
-                )
-                print(f"🔍 [DEBUG] store_summary returned: {success}")
+            segments = []
+            for idx, para in enumerate(paragraphs or []):
+                segments.append({
+                    'index': idx,
+                    'start_time': para.get('start_time', 0.0),
+                    'end_time': para.get('end_time', 0.0),
+                    'text': para.get('text', ''),
+                    'summary': para.get('summary', '')
+                })
 
-                if success:
-                    config.logger.info(f"✅ Successfully stored summary in vector database")
-                    print(f"✅ Successfully stored summary in vector database")
-                else:
-                    config.logger.warning(f"⚠️ Failed to store summary in vector database")
-                    print(f"⚠️ Failed to store summary in vector database")
-            except Exception as e:
-                config.logger.error(f"❌ Error storing summary to vector database: {e}")
-                print(f"❌ Error storing summary to vector database: {e}")
-                import traceback
-                traceback.print_exc()
+            transcript_id = None
 
-            # 存储到 PostgreSQL 数据库
             try:
                 from videotrans.hearsight import pg_store
 
                 if pg_store.is_enabled():
-                    print(f"🗄️ [DEBUG] Starting PostgreSQL store process...")
-
-                    # 将 paragraphs 转换为 segments 格式以便存储
-                    segments = []
-                    for i, para in enumerate(paragraphs):
-                        segments.append({
-                            'index': i,
-                            'start_time': para.get('start_time', 0.0),
-                            'end_time': para.get('end_time', 0.0),
-                            'text': para.get('text', ''),
-                            'summary': para.get('summary', '')
-                        })
-
-                    # 保存转写记录
                     transcript_id = pg_store.save_transcript(
-                        media_path=video_path or 'unknown',
+                        media_path=video_for_storage,
                         segments=segments
                     )
 
                     if transcript_id:
-                        # 保存摘要
-                        summaries_list = [{
+                        summaries_payload = [{
                             'topic': summary.get('topic', ''),
                             'summary': summary.get('summary', ''),
-                            'paragraph_count': len(paragraphs),
-                            'total_duration': summary.get('total_duration', 0.0)
+                            'paragraph_count': len(paragraphs or []),
+                            'total_duration': summary.get('total_duration', 0.0),
+                            'paragraphs': paragraphs
                         }]
-
                         summary_id = pg_store.save_summaries(
                             transcript_id=transcript_id,
-                            summaries=summaries_list
+                            summaries=summaries_payload
                         )
-
                         if summary_id:
-                            config.logger.info(f"✅ Successfully stored data in PostgreSQL: transcript_id={transcript_id}, summary_id={summary_id}")
-                            print(f"✅ Successfully stored data in PostgreSQL")
+                            config.logger.info(
+                                f"[hearsight] Stored data in PostgreSQL transcript_id={transcript_id}, summary_id={summary_id}"
+                            )
                         else:
-                            config.logger.warning(f"⚠️ Failed to store summaries in PostgreSQL")
+                            config.logger.warning("[hearsight] Failed to store summaries in PostgreSQL")
                     else:
-                        config.logger.warning(f"⚠️ Failed to store transcript in PostgreSQL")
+                        config.logger.warning("[hearsight] Failed to store transcript in PostgreSQL")
                 else:
-                    print(f"ℹ️ PostgreSQL storage is not enabled (missing configuration)")
-            except Exception as e:
-                config.logger.error(f"❌ Error storing data to PostgreSQL: {e}")
-                print(f"❌ Error storing data to PostgreSQL: {e}")
+                    print('[hearsight] PostgreSQL storage disabled (configuration missing)')
+            except Exception as db_error:
+                config.logger.error(f"[hearsight] PostgreSQL storage error: {db_error}")
                 import traceback
                 traceback.print_exc()
 
-            # 创建或更新HearSight视图组件
-            if not hasattr(self, 'hearsight_viewer_widget'):
-                self.hearsight_viewer_widget = SummaryViewerWidget(self, video_path=video_path)
+            try:
+                vector_store = get_vector_store()
+                metadata = {
+                    'basename': os.path.basename(video_for_storage) if video_for_storage else 'unknown',
+                    'source_language': config.params.get('source_language_code', ''),
+                    'target_language': config.params.get('target_language_code', ''),
+                    'app_mode': config.params.get('app_mode', ''),
+                    'transcript_id': transcript_id,
+                    'static_url': static_url,
+                    'source_media_path': original_video_path
+                }
+                success = vector_store.store_summary(
+                    video_path=video_for_storage,
+                    summary=summary,
+                    paragraphs=paragraphs or [],
+                    metadata=metadata
+                )
+                if success:
+                    config.logger.info('[hearsight] Stored summary in vector database')
+                else:
+                    config.logger.warning('[hearsight] Failed to store summary in vector database')
+            except Exception as vec_error:
+                config.logger.error(f"[hearsight] Vector store error: {vec_error}")
+                import traceback
+                traceback.print_exc()
 
-                # 如果有_central_stack，添加到stack中
+            if not hasattr(self, 'hearsight_viewer_widget'):
+                self.hearsight_viewer_widget = SummaryViewerWidget(self, video_path=video_for_storage)
                 if hasattr(self, '_central_stack') and self._central_stack:
                     self._central_stack.addWidget(self.hearsight_viewer_widget)
 
-            # 设置数据
             self.hearsight_viewer_widget.set_data(summary, paragraphs)
-            self.hearsight_viewer_widget.set_video_path(video_path)
+            self.hearsight_viewer_widget.set_video_path(video_for_storage)
 
-            # 切换到HearSight视图
             if hasattr(self, '_central_stack') and self._central_stack:
                 self._central_stack.setCurrentWidget(self.hearsight_viewer_widget)
 
-            QMessageBox.information(self, "成功", "智能摘要处理完成！\n结果已显示在右侧窗口。")
+            QMessageBox.information(
+                self,
+                'Success',
+                'HearSight summary is ready. The result is displayed on the right panel.'
+            )
 
         except Exception as e:
-            QMessageBox.critical(self, "错误", f"显示结果失败：\n{str(e)}")
+            QMessageBox.critical(
+                self,
+                'Error',
+                'Unable to display results.\n{}'.format(str(e))
+            )
 
     def _handle_hearsight_error(self, progress_dialog, error):
         """处理错误"""

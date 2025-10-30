@@ -9,9 +9,66 @@ from PySide6.QtWidgets import (
     QGroupBox, QSpinBox, QDoubleSpinBox, QMessageBox,
     QScrollArea, QWidget, QTextEdit
 )
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, QThread
 from videotrans.configure import config
 import json
+
+
+class ConnectionTestThread(QThread):
+    """后台测试连接线程"""
+    finished = Signal(bool, str)  # success, message
+
+    def __init__(self, api_key, base_url, model, test_vector=False,
+                 volc_api_key=None, volc_base_url=None, volc_model=None):
+        super().__init__()
+        self.api_key = api_key
+        self.base_url = base_url
+        self.model = model
+        self.test_vector = test_vector
+        self.volc_api_key = volc_api_key
+        self.volc_base_url = volc_base_url
+        self.volc_model = volc_model
+
+    def run(self):
+        try:
+            # 测试LLM连接
+            from videotrans.hearsight.chat_client import chat_simple
+
+            response = chat_simple(
+                prompt="请用一句话回复：你好",
+                api_key=self.api_key,
+                base_url=self.base_url,
+                model=self.model,
+                timeout=30
+            )
+
+            llm_result = f"[OK] LLM连接正常\n\n模型响应：{response[:100]}"
+
+            # 测试向量化服务
+            if self.test_vector:
+                if not self.volc_api_key or not self.volc_base_url or not self.volc_model:
+                    self.finished.emit(False, "[错误] 火山引擎向量化配置不完整")
+                    return
+
+                from videotrans.hearsight.volcengine_vector import VolcengineVectorClient
+
+                volc_client = VolcengineVectorClient(
+                    api_key=self.volc_api_key,
+                    base_url=self.volc_base_url,
+                    embedding_model=self.volc_model
+                )
+
+                if volc_client.test_connection():
+                    vector_result = "\n\n[OK] 火山引擎向量化服务连接正常"
+                else:
+                    vector_result = "\n\n[失败] 火山引擎向量化服务连接失败"
+
+                llm_result += vector_result
+
+            self.finished.emit(True, llm_result)
+
+        except Exception as e:
+            self.finished.emit(False, f"连接测试失败：\n{str(e)}")
 
 
 class HearSightConfigDialog(QDialog):
@@ -22,7 +79,10 @@ class HearSightConfigDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.setWindowTitle("⚙️ 智能摘要配置")
+        # 保存测试线程引用
+        self.test_thread = None
+
+        self.setWindowTitle("[配置] 智能摘要配置")
         self.resize(950, 800)
         self.setStyleSheet("""
             QDialog {
@@ -138,7 +198,7 @@ class HearSightConfigDialog(QDialog):
         main_layout.setContentsMargins(0, 0, 0, 0)
 
         # 顶部标题（固定不滚动）
-        title_label = QLabel("⚙️ 智能摘要配置中心")
+        title_label = QLabel("[配置] 智能摘要配置中心")
         title_label.setStyleSheet("""
             QLabel {
                 font-size: 20px;
@@ -454,7 +514,7 @@ class HearSightConfigDialog(QDialog):
         button_layout.setSpacing(12)
         button_layout.setContentsMargins(30, 15, 30, 20)
 
-        self.test_btn = QPushButton("🔌 测试连接")
+        self.test_btn = QPushButton("[测试] 测试连接")
         self.test_btn.clicked.connect(self.test_connection)
         self.test_btn.setMinimumHeight(44)
         self.test_btn.setStyleSheet("""
@@ -512,7 +572,7 @@ class HearSightConfigDialog(QDialog):
             }
         """)
 
-        self.cancel_btn = QPushButton("❌ 取消")
+        self.cancel_btn = QPushButton("[取消] 取消")
         self.cancel_btn.clicked.connect(self.reject)
         self.cancel_btn.setMinimumHeight(44)
         self.cancel_btn.setStyleSheet("""
@@ -686,7 +746,7 @@ class HearSightConfigDialog(QDialog):
             QMessageBox.critical(self, "错误", f"保存配置失败：\n{str(e)}")
 
     def test_connection(self):
-        """测试API连接"""
+        """测试API连接（使用后台线程，避免UI卡死）"""
         api_key = self.api_key_input.text().strip()
         base_url = self.base_url_input.text().strip()
         model = self.model_combo.currentText().strip()
@@ -695,70 +755,60 @@ class HearSightConfigDialog(QDialog):
             QMessageBox.warning(self, "警告", "请先填写完整的API配置")
             return
 
+        # 检查是否有正在运行的测试
+        if self.test_thread and self.test_thread.isRunning():
+            QMessageBox.warning(self, "提示", "已有测试正在运行中，请稍候...")
+            return
+
         # 检查是否也要测试向量化服务
         vector_type_index = self.vector_type_combo.currentIndex()
         test_vector = (vector_type_index == 1)  # 火山引擎
 
-        try:
-            # 测试LLM连接
-            from videotrans.hearsight.chat_client import chat_simple
+        volc_api_key = None
+        volc_base_url = None
+        volc_model = None
 
-            self.test_btn.setEnabled(False)
-            self.test_btn.setText("测试LLM中...")
+        if test_vector:
+            volc_api_key = self.volc_api_key_input.text().strip()
+            volc_base_url = self.volc_base_url_input.text().strip()
+            volc_model = self.volc_model_input.text().strip()
 
-            response = chat_simple(
-                prompt="请用一句话回复：你好",
-                api_key=api_key,
-                base_url=base_url,
-                model=model,
-                timeout=30
-            )
+            if not volc_api_key or not volc_base_url or not volc_model:
+                QMessageBox.warning(self, "警告", "请先填写完整的火山引擎向量化配置")
+                return
 
-            llm_result = f"✅ LLM连接正常\n\n模型响应：{response[:100]}"
+        # 禁用测试按钮，显示进度
+        self.test_btn.setEnabled(False)
+        self.test_btn.setText("测试中...")
 
-            # 测试向量化服务
-            if test_vector:
-                volc_api_key = self.volc_api_key_input.text().strip()
-                volc_base_url = self.volc_base_url_input.text().strip()
-                volc_model = self.volc_model_input.text().strip()
+        # 创建测试线程
+        self.test_thread = ConnectionTestThread(
+            api_key=api_key,
+            base_url=base_url,
+            model=model,
+            test_vector=test_vector,
+            volc_api_key=volc_api_key,
+            volc_base_url=volc_base_url,
+            volc_model=volc_model
+        )
 
-                if not volc_api_key or not volc_base_url or not volc_model:
-                    QMessageBox.warning(self, "警告", "请先填写完整的火山引擎向量化配置")
-                    return
+        # 连接信号
+        self.test_thread.finished.connect(self.on_test_finished)
 
-                self.test_btn.setText("测试向量化...")
+        # 启动线程
+        self.test_thread.start()
 
-                from videotrans.hearsight.volcengine_vector import VolcengineVectorClient
+    def on_test_finished(self, success: bool, message: str):
+        """测试完成的回调"""
+        # 恢复测试按钮
+        self.test_btn.setEnabled(True)
+        self.test_btn.setText("[测试] 测试连接")
 
-                volc_client = VolcengineVectorClient(
-                    api_key=volc_api_key,
-                    base_url=volc_base_url,
-                    embedding_model=volc_model
-                )
-
-                if volc_client.test_connection():
-                    vector_result = "\n\n✅ 火山引擎向量化服务连接正常"
-                else:
-                    vector_result = "\n\n❌ 火山引擎向量化服务连接失败"
-
-                llm_result += vector_result
-
-            QMessageBox.information(
-                self,
-                "测试完成",
-                llm_result
-            )
-
-        except Exception as e:
-            QMessageBox.critical(
-                self,
-                "测试失败",
-                f"连接测试失败：\n{str(e)}"
-            )
-
-        finally:
-            self.test_btn.setEnabled(True)
-            self.test_btn.setText("🔌 测试连接")
+        # 显示结果
+        if success:
+            QMessageBox.information(self, "测试完成", message)
+        else:
+            QMessageBox.critical(self, "测试失败", message)
 
     def get_config(self) -> dict:
         """获取当前配置"""

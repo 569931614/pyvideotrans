@@ -66,21 +66,39 @@ class VolcengineVectorClient:
                 "encoding_format": "float"
             }
 
+            print(f"[volcengine] 请求URL: {self.embedding_url}")
+            print(f"[volcengine] 请求模型: {self.embedding_model}")
+            print(f"[volcengine] API Key前缀: {self.api_key[:20] if self.api_key else 'None'}...")
+
             response = self.session.post(
                 self.embedding_url,
                 json=payload,
                 timeout=30
             )
+
+            # 如果响应不是200，打印详细错误
+            if response.status_code != 200:
+                print(f"[volcengine] HTTP {response.status_code} 错误响应:")
+                try:
+                    error_detail = response.json()
+                    print(f"[volcengine] 错误详情: {error_detail}")
+                except:
+                    print(f"[volcengine] 响应内容: {response.text[:500]}")
+
             response.raise_for_status()
 
             result = response.json()
             if 'data' in result and len(result['data']) > 0:
                 return result['data'][0]['embedding']
+            else:
+                print(f"[volcengine] 响应格式错误: {result}")
 
             return None
 
         except Exception as e:
-            print(f"❌ 获取embedding失败: {e}")
+            print(f"[volcengine] 获取embedding失败: {e}")
+            import traceback
+            traceback.print_exc()
             return None
 
     def _batch_get_embeddings(self, texts: List[str]) -> List[Optional[List[float]]]:
@@ -118,7 +136,7 @@ class VolcengineVectorClient:
             return embeddings
 
         except Exception as e:
-            print(f"❌ 批量获取embedding失败: {e}")
+            print(f"[volcengine] 批量获取embedding失败: {e}")
             # 降级为单个请求
             return [self._get_embedding(text) for text in texts]
 
@@ -195,6 +213,9 @@ class VolcengineVectorClient:
                     "has_summary": bool(para_summary),
                     "paragraph_summary": para_summary if para_summary else ""
                 }
+                # 合并传入的 metadata（包含 transcript_id 等信息）
+                if metadata:
+                    para_meta.update(metadata)
                 doc_metas.append(para_meta)
 
             # 批量获取embeddings
@@ -202,12 +223,12 @@ class VolcengineVectorClient:
             embeddings = self._batch_get_embeddings(texts_to_embed)
 
             if not embeddings or len(embeddings) != len(texts_to_embed):
-                print("❌ 向量化失败")
+                print("[volcengine] 向量化失败")
                 return False
 
             # 检查是否有None值
             if any(e is None for e in embeddings):
-                print("❌ 部分文档向量化失败")
+                print("[volcengine] 部分文档向量化失败")
                 return False
 
             # 存储到本地文件
@@ -240,7 +261,7 @@ class VolcengineVectorClient:
             with open(storage_file, 'w', encoding='utf-8') as f:
                 json.dump(storage_data, f, ensure_ascii=False, indent=2)
 
-            print(f"✅ 成功存储视频摘要: {os.path.basename(video_path)}")
+            print(f"[volcengine] 成功存储视频摘要: {os.path.basename(video_path)}")
             print(f"   - 整体摘要: 1 条")
             print(f"   - 段落摘要: {len(paragraphs)} 条")
             print(f"   - 存储路径: {storage_file}")
@@ -248,7 +269,7 @@ class VolcengineVectorClient:
             return True
 
         except Exception as e:
-            print(f"❌ 存储摘要失败: {e}")
+            print(f"[volcengine] 存储摘要失败: {e}")
             import traceback
             traceback.print_exc()
             return False
@@ -291,7 +312,7 @@ class VolcengineVectorClient:
             # 获取查询向量
             query_embedding = self._get_embedding(query)
             if query_embedding is None:
-                print("❌ 查询文本向量化失败")
+                print("[volcengine] 查询文本向量化失败")
                 return []
 
             # 读取所有存储的文档
@@ -340,7 +361,7 @@ class VolcengineVectorClient:
             return all_results[:n_results]
 
         except Exception as e:
-            print(f"❌ 搜索失败: {e}")
+            print(f"[volcengine] 搜索失败: {e}")
             import traceback
             traceback.print_exc()
             return []
@@ -367,14 +388,14 @@ class VolcengineVectorClient:
 
             if os.path.exists(storage_file):
                 os.remove(storage_file)
-                print(f"✅ 已删除视频摘要: {os.path.basename(video_path)}")
+                print(f"[volcengine] 已删除视频摘要: {os.path.basename(video_path)}")
                 return True
             else:
-                print(f"⚠️ 未找到视频摘要: {os.path.basename(video_path)}")
+                print(f"[volcengine] 未找到视频摘要: {os.path.basename(video_path)}")
                 return False
 
         except Exception as e:
-            print(f"❌ 删除失败: {e}")
+            print(f"[volcengine] 删除失败: {e}")
             return False
 
     def get_video_summary(
@@ -383,14 +404,14 @@ class VolcengineVectorClient:
         local_storage_path: str = None
     ) -> Optional[Dict[str, Any]]:
         """
-        获取视频的完整摘要数据
+        获取视频的完整摘要数据（兼容ChromaDB格式）
 
         Args:
             video_path: 视频路径
             local_storage_path: 本地存储路径
 
         Returns:
-            Optional[Dict]: 摘要数据
+            Optional[Dict]: 摘要数据（ChromaDB兼容格式）
         """
         try:
             video_id = self._generate_video_id(video_path)
@@ -407,15 +428,71 @@ class VolcengineVectorClient:
             with open(storage_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
 
+            # 转换为 ChromaDB 兼容格式
+            summary = data['summary']
+            paragraphs = data['paragraphs']
+
+            # 构建整体摘要文档
+            overall_doc = f"主题: {summary.get('topic', '')}\n总结: {summary.get('summary', '')}"
+
+            # 查找 overall_summary 类型的文档元数据
+            overall_meta = None
+            for doc in data.get('documents', []):
+                if doc['metadata']['type'] == 'overall_summary':
+                    overall_meta = doc['metadata']
+                    break
+
+            if not overall_meta:
+                # 如果没有找到，创建默认元数据
+                overall_meta = {
+                    'video_id': video_id,
+                    'video_path': video_path,
+                    'type': 'overall_summary',
+                    'topic': summary.get('topic', ''),
+                    'paragraph_count': len(paragraphs),
+                    'total_duration': float(summary.get('total_duration', 0.0))
+                }
+
+            # 构建段落列表
+            paragraphs_list = []
+            for i, para in enumerate(paragraphs):
+                para_summary = para.get('summary', '')
+                para_text = para.get('text', '')
+
+                if para_summary:
+                    para_doc = f"段落摘要: {para_summary}\n完整内容: {para_text}"
+                else:
+                    para_doc = para_text
+
+                para_meta = {
+                    'video_id': video_id,
+                    'video_path': video_path,
+                    'type': 'paragraph',
+                    'index': i,
+                    'start_time': float(para.get('start_time', 0.0)),
+                    'end_time': float(para.get('end_time', 0.0)),
+                    'has_summary': bool(para_summary),
+                    'paragraph_summary': para_summary
+                }
+
+                paragraphs_list.append({
+                    'document': para_doc,
+                    'metadata': para_meta
+                })
+
             return {
                 "video_path": video_path,
-                "summary": data['summary'],
-                "paragraphs": data['paragraphs'],
-                "metadata": data.get('metadata')
+                "overall": {
+                    "document": overall_doc,
+                    "metadata": overall_meta
+                },
+                "paragraphs": paragraphs_list
             }
 
         except Exception as e:
-            print(f"❌ 获取摘要失败: {e}")
+            print(f"[volcengine] 获取摘要失败: {e}")
+            import traceback
+            traceback.print_exc()
             return None
 
     def list_all_videos(self, local_storage_path: str = None) -> List[Dict[str, Any]]:
@@ -464,7 +541,7 @@ class VolcengineVectorClient:
             return videos
 
         except Exception as e:
-            print(f"❌ 列出视频失败: {e}")
+            print(f"[volcengine] 列出视频失败: {e}")
             return []
 
     def test_connection(self) -> bool:
@@ -479,12 +556,12 @@ class VolcengineVectorClient:
             embedding = self._get_embedding(test_text)
 
             if embedding and len(embedding) > 0:
-                print(f"✅ 火山引擎向量化服务连接成功 (embedding维度: {len(embedding)})")
+                print(f"[volcengine] 火山引擎向量化服务连接成功 (embedding维度: {len(embedding)})")
                 return True
             else:
-                print("❌ 获取embedding失败")
+                print("[volcengine] 获取embedding失败")
                 return False
 
         except Exception as e:
-            print(f"❌ 连接测试失败: {e}")
+            print(f"[volcengine] 连接测试失败: {e}")
             return False

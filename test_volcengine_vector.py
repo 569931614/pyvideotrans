@@ -6,6 +6,7 @@
 
 import sys
 import os
+import json
 
 # 添加项目路径
 sys.path.insert(0, os.path.dirname(__file__))
@@ -13,31 +14,84 @@ sys.path.insert(0, os.path.dirname(__file__))
 from videotrans.hearsight.volcengine_vector import VolcengineVectorClient
 
 
-def test_basic_connection():
-    """测试基本连接"""
-    print("=" * 60)
-    print("测试1: 基本连接测试")
-    print("=" * 60)
+def load_config():
+    """从配置文件加载火山引擎配置"""
+    config_path = os.path.join(os.path.dirname(__file__), "hearsight_config.json")
+    if not os.path.exists(config_path):
+        print(f"[警告] 配置文件不存在: {config_path}")
+        return None
 
-    # 使用提供的API密钥
-    api_key = "2cad3d85-a6a5-433e-9ac5-41598e1aae83"
-    base_url = "https://ark.cn-beijing.volces.com/api/v3"
-    embedding_model = "ep-20241217191853-w54rf"  # 示例endpoint ID，请替换为实际的
+    with open(config_path, 'r', encoding='utf-8') as f:
+        config = json.load(f)
 
-    client = VolcengineVectorClient(
+    vector_config = config.get('vector', {})
+    volc_config = vector_config.get('volcengine', {})
+
+    return volc_config
+
+
+def get_client_from_config():
+    """从配置文件创建客户端"""
+    volc_config = load_config()
+
+    if not volc_config:
+        # 使用默认配置
+        print("[警告] 未找到配置文件，使用默认配置")
+        api_key = "2cad3d85-a6a5-433e-9ac5-41598e1aae83"
+        base_url = "https://ark.cn-beijing.volces.com/api/v3"
+        embedding_model = "ep-20241217191853-w54rf"
+    else:
+        api_key = volc_config.get('api_key', '')
+        base_url = volc_config.get('base_url', 'https://ark.cn-beijing.volces.com/api/v3')
+        embedding_model = volc_config.get('embedding_model', '')
+
+    # 验证配置
+    print("\n" + "=" * 60)
+    print("当前配置:")
+    print("=" * 60)
+    print(f"API Key: {'[已设置]' if api_key else '[未设置]'}")
+    print(f"Base URL: {base_url}")
+    print(f"Embedding Model: {embedding_model if embedding_model else '[未设置]'}")
+
+    if not api_key:
+        print("\n[错误] API Key 未配置！")
+        print("请在 hearsight_config.json 中配置 vector.volcengine.api_key")
+        return None
+
+    if not embedding_model:
+        print("\n[错误] Embedding Model 未配置！")
+        print("请在 hearsight_config.json 中配置 vector.volcengine.embedding_model")
+        print("\n获取Embedding Model的步骤:")
+        print("1. 访问: https://console.volcengine.com/ark/region:ark+cn-beijing/endpoint")
+        print("2. 创建或查找您的 Embedding 模型端点")
+        print("3. 复制 Endpoint ID (格式如: ep-20241217191853-xxxxx)")
+        return None
+
+    return VolcengineVectorClient(
         api_key=api_key,
         base_url=base_url,
         embedding_model=embedding_model
     )
 
+
+def test_basic_connection():
+    """测试基本连接"""
+    print("\n" + "=" * 60)
+    print("测试1: 基本连接测试")
+    print("=" * 60)
+
+    client = get_client_from_config()
+    if not client:
+        return None
+
     # 测试连接
     success = client.test_connection()
 
     if success:
-        print("✅ 连接测试成功！")
+        print("[OK] 连接测试成功！")
         return client
     else:
-        print("❌ 连接测试失败！")
+        print("[Failed] 连接测试失败！")
         return None
 
 
@@ -47,15 +101,9 @@ def test_embedding():
     print("测试2: 文本向量化")
     print("=" * 60)
 
-    api_key = "2cad3d85-a6a5-433e-9ac5-41598e1aae83"
-    base_url = "https://ark.cn-beijing.volces.com/api/v3"
-    embedding_model = "ep-20241217191853-w54rf"
-
-    client = VolcengineVectorClient(
-        api_key=api_key,
-        base_url=base_url,
-        embedding_model=embedding_model
-    )
+    client = get_client_from_config()
+    if not client:
+        return False
 
     # 测试单个文本
     test_text = "这是一个测试文本，用于测试火山引擎的向量化服务。"
@@ -64,12 +112,12 @@ def test_embedding():
     embedding = client._get_embedding(test_text)
 
     if embedding:
-        print(f"✅ 向量化成功!")
+        print(f"[OK] 向量化成功!")
         print(f"   - 向量维度: {len(embedding)}")
         print(f"   - 前10个值: {embedding[:10]}")
         return True
     else:
-        print("❌ 向量化失败!")
+        print("[Failed] 向量化失败!")
         return False
 
 
@@ -79,15 +127,9 @@ def test_batch_embedding():
     print("测试3: 批量文本向量化")
     print("=" * 60)
 
-    api_key = "2cad3d85-a6a5-433e-9ac5-41598e1aae83"
-    base_url = "https://ark.cn-beijing.volces.com/api/v3"
-    embedding_model = "ep-20241217191853-w54rf"
-
-    client = VolcengineVectorClient(
-        api_key=api_key,
-        base_url=base_url,
-        embedding_model=embedding_model
-    )
+    client = get_client_from_config()
+    if not client:
+        return False
 
     # 测试多个文本
     test_texts = [
@@ -101,14 +143,14 @@ def test_batch_embedding():
     embeddings = client._batch_get_embeddings(test_texts)
 
     if embeddings and len(embeddings) == len(test_texts):
-        print(f"✅ 批量向量化成功!")
+        print(f"[OK] 批量向量化成功!")
         print(f"   - 返回向量数: {len(embeddings)}")
         for i, emb in enumerate(embeddings):
             if emb:
                 print(f"   - 文本{i+1}维度: {len(emb)}")
         return True
     else:
-        print("❌ 批量向量化失败!")
+        print("[Failed] 批量向量化失败!")
         return False
 
 
@@ -118,15 +160,9 @@ def test_store_and_search():
     print("测试4: 存储和检索")
     print("=" * 60)
 
-    api_key = "2cad3d85-a6a5-433e-9ac5-41598e1aae83"
-    base_url = "https://ark.cn-beijing.volces.com/api/v3"
-    embedding_model = "ep-20241217191853-w54rf"
-
-    client = VolcengineVectorClient(
-        api_key=api_key,
-        base_url=base_url,
-        embedding_model=embedding_model
-    )
+    client = get_client_from_config()
+    if not client:
+        return False
 
     # 模拟视频摘要数据
     video_path = "test_video.mp4"
@@ -166,7 +202,7 @@ def test_store_and_search():
     )
 
     if not success:
-        print("❌ 存储失败!")
+        print("[Failed] 存储失败!")
         return False
 
     # 检索
@@ -191,7 +227,7 @@ def test_store_and_search():
         else:
             print("  未找到结果")
 
-    print("\n✅ 存储和检索测试完成!")
+    print("\n[OK] 存储和检索测试完成!")
     return True
 
 
@@ -201,7 +237,7 @@ def main():
     print("火山引擎向量化服务测试")
     print("=" * 60 + "\n")
 
-    print("⚠️  注意: 请确保已配置正确的API密钥和Embedding模型endpoint ID")
+    print("[提示] 请确保已配置正确的API密钥和Embedding模型endpoint ID")
     print()
 
     # 运行测试
@@ -218,7 +254,7 @@ def main():
             result = test_func()
             results.append((name, result))
         except Exception as e:
-            print(f"\n❌ 测试 '{name}' 发生异常: {e}")
+            print(f"\n[错误] 测试 '{name}' 发生异常: {e}")
             import traceback
             traceback.print_exc()
             results.append((name, False))
@@ -232,15 +268,15 @@ def main():
     total_count = len(results)
 
     for name, result in results:
-        status = "✅ 通过" if result else "❌ 失败"
+        status = "[通过]" if result else "[失败]"
         print(f"{name}: {status}")
 
     print(f"\n总计: {success_count}/{total_count} 个测试通过")
 
     if success_count == total_count:
-        print("\n🎉 所有测试通过!")
+        print("\n[成功] 所有测试通过!")
     else:
-        print(f"\n⚠️  有 {total_count - success_count} 个测试失败")
+        print(f"\n[警告] 有 {total_count - success_count} 个测试失败")
 
 
 if __name__ == "__main__":

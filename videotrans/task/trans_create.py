@@ -681,52 +681,52 @@ class TransCreate(BaseTask):
                 from videotrans.configure import config as _cfg
 
                 # Debug: Log all params
-                _cfg.logger.info(f"🔍 HearSight Debug - enable_hearsight param: {_cfg.params.get('enable_hearsight', False)}")
-                _cfg.logger.info(f"🔍 HearSight Debug - all params keys: {list(_cfg.params.keys())}")
+                _cfg.logger.info(f"[HearSight Debug] enable_hearsight param: {_cfg.params.get('enable_hearsight', False)}")
+                _cfg.logger.info(f"[HearSight Debug] all params keys: {list(_cfg.params.keys())}")
 
                 # Check if enable_hearsight is checked
                 if not _cfg.params.get('enable_hearsight', False):
-                    _cfg.logger.info("⏭️ HearSight is not enabled, skipping summary generation")
+                    _cfg.logger.info("[HearSight] Not enabled, skipping summary generation")
                     return
 
-                _cfg.logger.info("✅ HearSight is enabled, starting summary generation...")
+                _cfg.logger.info("[HearSight] Enabled, starting summary generation...")
 
                 # Check if HearSight config exists
                 hearsight_cfg = getattr(_cfg, 'hearsight_config', None)
                 if not hearsight_cfg:
-                    _cfg.logger.warning("⚠️ HearSight config not found, skipping summary generation")
+                    _cfg.logger.warning("[HearSight] Config not found, skipping summary generation")
                     return
 
-                _cfg.logger.info(f"✅ HearSight config loaded: {list(hearsight_cfg.keys())}")
+                _cfg.logger.info(f"[HearSight] Config loaded: {list(hearsight_cfg.keys())}")
 
                 llm_cfg = hearsight_cfg.get('llm', {})
                 if not llm_cfg.get('api_key'):
-                    _cfg.logger.warning("⚠️ HearSight API key not configured, skipping summary generation")
+                    _cfg.logger.warning("[HearSight] API key not configured, skipping summary generation")
                     return
 
-                _cfg.logger.info("✅ HearSight API key configured")
+                _cfg.logger.info("[HearSight] API key configured")
 
                 # Find SRT file (prefer target, fallback to source)
                 srt_file = None
-                _cfg.logger.info(f"🔍 Looking for SRT files...")
+                _cfg.logger.info(f"[HearSight] Looking for SRT files...")
                 _cfg.logger.info(f"   target_sub: {self.cfg.get('target_sub', 'None')}")
                 _cfg.logger.info(f"   source_sub: {self.cfg.get('source_sub', 'None')}")
 
                 try:
                     if self.cfg.get('target_sub') and Path(self.cfg['target_sub']).exists():
                         srt_file = self.cfg['target_sub']
-                        _cfg.logger.info(f"✅ Found target SRT: {srt_file}")
+                        _cfg.logger.info(f"[HearSight] Found target SRT: {srt_file}")
                     elif self.cfg.get('source_sub') and Path(self.cfg['source_sub']).exists():
                         srt_file = self.cfg['source_sub']
-                        _cfg.logger.info(f"✅ Found source SRT: {srt_file}")
+                        _cfg.logger.info(f"[HearSight] Found source SRT: {srt_file}")
                 except Exception as e:
-                    _cfg.logger.error(f"❌ Error checking SRT files: {e}")
+                    _cfg.logger.error(f"[HearSight] Error checking SRT files: {e}")
 
                 if not srt_file:
-                    _cfg.logger.warning("⚠️ No SRT file found, skipping HearSight summary")
+                    _cfg.logger.warning("[HearSight] No SRT file found, skipping HearSight summary")
                     return
 
-                _cfg.logger.info(f"🚀 Starting HearSight summary generation for: {srt_file}")
+                _cfg.logger.info(f"[HearSight] Starting summary generation for: {srt_file}")
 
                 # Import HearSight modules
                 from videotrans.hearsight.segment_merger import merge_srt_to_paragraphs
@@ -786,7 +786,18 @@ class TransCreate(BaseTask):
                         f.write("\n" + "=" * 80 + "\n")
                         f.write("整体摘要\n")
                         f.write("=" * 80 + "\n\n")
-                        f.write(summary + "\n\n")
+
+                        # 提取摘要文本（summary是字典）
+                        if isinstance(summary, dict):
+                            topic = summary.get('topic', '')
+                            summary_text = summary.get('summary', '')
+                            if topic:
+                                f.write(f"主题: {topic}\n\n")
+                            f.write(f"{summary_text}\n\n")
+                        else:
+                            # 兼容旧格式（如果返回的是字符串）
+                            f.write(str(summary) + "\n\n")
+
                         f.write("=" * 80 + "\n")
                         f.write("段落摘要\n")
                         f.write("=" * 80 + "\n\n")
@@ -796,22 +807,30 @@ class TransCreate(BaseTask):
                             f.write(f"摘要: {para['summary']}\n")
                             f.write(f"原文:\n{para['text']}\n")
                             f.write("-" * 80 + "\n\n")
-                    _cfg.logger.info(f"✅ Summary saved to: {summary_file}")
+                    _cfg.logger.info(f"[OK] Summary saved to: {summary_file}")
                 except Exception as e:
-                    _cfg.logger.error(f"❌ Failed to save summary to file: {e}")
+                    _cfg.logger.error(f"[Failed] Failed to save summary to file: {e}")
 
                 # Step 5: Store in vector database
                 try:
-                    vector_store = get_vector_store()
+                    from videotrans.hearsight.vector_store import get_vector_store
+                    import hashlib
+
                     video_path = self.cfg.get('name', '')
+
+                    # 生成 transcript_id（基于视频路径的hash）
+                    transcript_id = hashlib.md5(video_path.encode('utf-8')).hexdigest()[:16]
+                    _cfg.logger.info(f"[HearSight] Generated transcript_id: {transcript_id}")
 
                     metadata = {
                         'basename': self.cfg.get('basename', ''),
                         'source_language': self.cfg.get('source_language_code', ''),
                         'target_language': self.cfg.get('target_language_code', ''),
-                        'app_mode': self.cfg.get('app_mode', '')
+                        'app_mode': self.cfg.get('app_mode', ''),
+                        'transcript_id': transcript_id  # 直接包含 transcript_id
                     }
 
+                    vector_store = get_vector_store()
                     success = vector_store.store_summary(
                         video_path=video_path,
                         summary=summary,
@@ -820,11 +839,11 @@ class TransCreate(BaseTask):
                     )
 
                     if success:
-                        _cfg.logger.info(f"✅ Successfully stored HearSight summary in vector database")
+                        _cfg.logger.info(f"[HearSight] Successfully stored summary in vector database with transcript_id={transcript_id}")
                     else:
-                        _cfg.logger.warning(f"⚠️ Failed to store HearSight summary in vector database")
+                        _cfg.logger.warning(f"[HearSight] Failed to store summary in vector database")
                 except Exception as e:
-                    _cfg.logger.warning(f"⚠️ Failed to store in vector database: {e}")
+                    _cfg.logger.warning(f"[HearSight] Failed to store in vector database: {e}")
 
             except Exception as e:
                 try:
