@@ -77,7 +77,15 @@ class VolcEngineTTS(BaseTTS):
             role = data_item['role']
             langcode = self.language[:2].lower()
             if not self.voice_type:
-                self.voice_type = tools.get_volcenginetts_rolelist(role, self.language)
+                # 优先使用配置的音色ID
+                if config.params.get("volcenginetts_voice"):
+                    self.voice_type = config.params["volcenginetts_voice"]
+                else:
+                    try:
+                        self.voice_type = tools.get_volcenginetts_rolelist(role, self.language)
+                    except:
+                        # 如果找不到角色名称映射，直接使用输入的字符串作为voice_type
+                        self.voice_type = role
 
             if langcode == 'zh':
                 langcode = self.fangyan.get(role[:2], "cn")
@@ -114,7 +122,7 @@ class VolcEngineTTS(BaseTTS):
                 }
             }
             resp = requests.post(api_url, json.dumps(request_json), headers=header,
-                                 proxies={"http": "", "https": ""},verify=False)
+                                 proxies={"http": "", "https": ""}, verify=True)
             resp.raise_for_status()
             resp_json = resp.json()
             if "data" in resp_json:

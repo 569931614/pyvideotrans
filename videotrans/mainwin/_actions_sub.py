@@ -317,9 +317,15 @@ class WinActionSub:
             # 停止当前任务
             self.update_status('stop')
 
-        # 清理旧的任务按钮和队列
-        self.delete_process()
-        self.queue_mp4 = []
+        # 完全清理旧的任务数据
+        self.delete_process()  # 删除所有进度按钮
+        self.queue_mp4 = []  # 清空视频队列
+        self.obj_list = []  # 清空任务对象列表
+        config.stoped_uuid_set.clear()  # 清空已停止任务集合
+
+        # 确保状态正确（如果之前有错误任务导致状态异常）
+        if config.current_status == 'ing':
+            config.current_status = 'stop'
 
         if self.main.app_mode == 'tiqu':
             allowed_exts = config.VIDEO_EXTS + config.AUDIO_EXITS

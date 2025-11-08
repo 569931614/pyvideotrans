@@ -15,15 +15,20 @@ def openwin():
         appid = winobj.volcenginetts_appid.text().strip()
         access = winobj.volcenginetts_access.text().strip()
         cluster = winobj.volcenginetts_cluster.text().strip()
+        voice_id = winobj.volcenginetts_voice.text().strip()
         if not appid or not access or not cluster:
             return tools.show_error('必须填写 appid access 和 cluster', False)
         config.params["volcenginetts_appid"] = appid
         config.params["volcenginetts_access"] = access
         config.params["volcenginetts_cluster"] = cluster
+        if voice_id:
+            config.params["volcenginetts_voice"] = voice_id
         from videotrans import tts
+        # 如果配置了音色ID，使用配置的ID，否则使用默认
+        test_role = voice_id if voice_id else "通用男声"
         wk = ListenVoice(parent=winobj, queue_tts=[{
             "text": '你好啊我的朋友',
-            "role": "通用男声",
+            "role": test_role,
             "filename": config.TEMP_HOME + f"/test-volcenginetts.wav",
             "tts_type": tts.VOLCENGINE_TTS}],
                          language="zh",
@@ -36,10 +41,12 @@ def openwin():
         appid = winobj.volcenginetts_appid.text().strip()
         access = winobj.volcenginetts_access.text().strip()
         cluster = winobj.volcenginetts_cluster.text().strip()
+        voice_id = winobj.volcenginetts_voice.text().strip()
 
         config.params["volcenginetts_appid"] = appid
         config.params["volcenginetts_access"] = access
         config.params["volcenginetts_cluster"] = cluster
+        config.params["volcenginetts_voice"] = voice_id
         config.getset_params(config.params)
         winobj.close()
 
@@ -51,6 +58,8 @@ def openwin():
             winobj.volcenginetts_access.setText(config.params["volcenginetts_access"])
         if config.params["volcenginetts_cluster"]:
             winobj.volcenginetts_cluster.setText(config.params["volcenginetts_cluster"])
+        if config.params.get("volcenginetts_voice"):
+            winobj.volcenginetts_voice.setText(config.params["volcenginetts_voice"])
 
     from videotrans.component import VolcEngineTTSForm
     winobj = config.child_forms.get('volcenginettsw')

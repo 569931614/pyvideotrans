@@ -70,6 +70,10 @@ async function bootstrap() {
 
     console.log('下拉选项填充完成');
 
+    // Load HearSight folders
+    await loadHearSightFolders();
+    console.log('HearSight文件夹加载完成');
+
     // Bind select events AFTER they are created
     bindSelectEvents();
     console.log('绑定下拉事件完成');
@@ -781,4 +785,56 @@ function showNotification(message, type = 'info') {
     notification.classList.remove('show');
     setTimeout(() => notification.remove(), 300);
   }, 3000);
+}
+
+// ========== HearSight Folder Selection ==========
+
+async function loadHearSightFolders() {
+  try {
+    if (!bridge || !bridge.getHearSightFolders) {
+      console.warn('Bridge or getHearSightFolders not available');
+      return;
+    }
+
+    const folders = await bridge.getHearSightFolders();
+    console.log('获取到文件夹列表:', folders);
+
+    if (!folders || folders.length === 0) {
+      console.warn('没有可用的文件夹');
+      return;
+    }
+
+    // 格式化为下拉选项格式（添加计数显示）
+    const options = folders.map(folder => ({
+      value: folder.value === null ? '' : folder.value,  // null 转换为空字符串
+      label: folder.count > 0 ? `${folder.label} (${folder.count})` : folder.label
+    }));
+
+    // 填充下拉框，默认选中第一个（全部视频）
+    populateSelect('hearsight-folder', options, '');
+
+    // 绑定变更事件
+    bindHearSightFolderChange();
+
+  } catch (e) {
+    console.error('加载文件夹列表失败:', e);
+    showNotification('加载文件夹列表失败: ' + e.message, 'error');
+  }
+}
+
+function bindHearSightFolderChange() {
+  const el = document.getElementById('hearsight-folder');
+  if (!el) {
+    console.warn('找不到 hearsight-folder 元素');
+    return;
+  }
+
+  el.addEventListener('cschange', (e) => {
+    const folderId = e.detail.value || '';
+    console.log('选择文件夹:', folderId || '全部视频');
+
+    if (bridge && bridge.setHearSightFolder) {
+      bridge.setHearSightFolder(folderId);
+    }
+  });
 }

@@ -291,9 +291,16 @@ class TransCreate(BaseTask):
                 self._signal(text=config.transobj['Separating background music'])
                 self.status_text = config.transobj['Separating background music']
                 self._split_audio_byraw(True)
-            except:
-                pass
-            finally:
+            except Exception as e:
+                config.logger.error(f"人声分离失败: {str(e)}")
+                config.logger.exception(e, exc_info=True)
+                # 分离失败时设置标志
+                self.cfg['instrument'] = None
+                self.cfg['vocal'] = None
+                self.cfg['is_separate'] = False
+                self.shoud_separate = False
+            else:
+                # 分离成功时的处理
                 if not tools.vail_file(self.cfg['vocal']) or not tools.vail_file(self.cfg['instrument']):
                     # 分离失败
                     self.cfg['instrument'] = None
@@ -306,13 +313,23 @@ class TransCreate(BaseTask):
         # 不分离，或分离失败
         if not self.cfg['is_separate']:
             self.status_text = config.transobj['kaishitiquyinpin']
-            self._split_audio_byraw()
+            try:
+                self._split_audio_byraw()
+            except Exception as e:
+                error_msg = f"音频分离失败: {str(e)}" if config.defaulelang == 'zh' else f"Audio separation failed: {str(e)}"
+                config.logger.error(error_msg)
+                config.logger.exception(e, exc_info=True)
+                raise RuntimeError(error_msg)
             # 需要识别
             if self.shoud_recogn:
                 tools.conver_to_16k(self.cfg['source_wav'], self.cfg['shibie_audio'])
 
-        if self.cfg['source_wav']:
-            shutil.copy2(self.cfg['source_wav'],self.cfg['target_dir'] + f"/{os.path.basename(self.cfg['source_wav'])}")
+        # 只有在文件确实存在时才复制
+        if self.cfg['source_wav'] and tools.vail_file(self.cfg['source_wav']):
+            try:
+                shutil.copy2(self.cfg['source_wav'],self.cfg['target_dir'] + f"/{os.path.basename(self.cfg['source_wav'])}")
+            except Exception as e:
+                config.logger.warning(f"复制音频文件失败: {e}")
         self.status_text = config.transobj['endfenliyinpin']
 
     def _recogn_succeed(self) -> None:
@@ -344,6 +361,21 @@ class TransCreate(BaseTask):
             return
 
         if not tools.vail_file(self.cfg['source_wav']):
+            # 提供更详细的错误信息以便诊断
+            video_exists = os.path.exists(self.cfg['name'])
+            cache_folder_exists = os.path.exists(self.cfg['cache_folder'])
+            error_details = (
+                f"分离音频失败，请检查日志或重试\n"
+                f"源视频存在: {video_exists} ({self.cfg['name']})\n"
+                f"缓存目录存在: {cache_folder_exists} ({self.cfg['cache_folder']})\n"
+                f"预期音频文件: {self.cfg['source_wav']}"
+            ) if config.defaulelang == 'zh' else (
+                f"Failed to separate audio, please check the log or retry\n"
+                f"Source video exists: {video_exists} ({self.cfg['name']})\n"
+                f"Cache folder exists: {cache_folder_exists} ({self.cfg['cache_folder']})\n"
+                f"Expected audio file: {self.cfg['source_wav']}"
+            )
+            config.logger.error(error_details)
             error = "分离音频失败，请检查日志或重试" if config.defaulelang == 'zh' else "Failed to separate audio, please check the log or retry"
             tools.send_notification(error, f'{self.cfg["basename"]}')
             self.hasend = True
@@ -618,6 +650,84 @@ class TransCreate(BaseTask):
 
         self.hasend = True
         self.precent = 100
+
+        # OSS Upload integration (optional, non-blocking)
+        oss_video_url = None  # Will store the OSS URL if upload succeeds
+
+        # Load OSS config first to get timeout
+        oss_upload_timeout = 300  # Default timeout
+        try:
+            from videotrans.configure.oss_config import get_oss_config_manager
+            _temp_manager = get_oss_config_manager()
+            _temp_config = _temp_manager.load_config()
+            oss_upload_timeout = _temp_config.get('upload_timeout', 300)
+        except Exception:
+            pass
+
+        def _upload_to_oss():
+            """Upload processed video to OSS (non-blocking)"""
+            nonlocal oss_video_url
+            try:
+                from videotrans.configure.oss_config import get_oss_config_manager
+                from videotrans.util.oss_uploader import OSSUploader
+
+                # Load OSS config
+                manager = get_oss_config_manager()
+                oss_config = manager.load_config()
+
+                # Check if OSS is enabled and upload_on_complete is True
+                if not oss_config.get('enabled', False):
+                    config.logger.info("[OSS] Upload disabled, skipping")
+                    return
+
+                if not oss_config.get('upload_on_complete', True):
+                    config.logger.info("[OSS] upload_on_complete is False, skipping")
+                    return
+
+                # Get the output video file
+                video_file = self.cfg.get('targetdir_mp4')
+                if not video_file or not Path(video_file).exists():
+                    config.logger.warning(f"[OSS] Video file not found: {video_file}")
+                    return
+
+                config.logger.info(f"[OSS] Starting upload: {video_file}")
+                self._signal(text="正在上传到 OSS..." if config.defaulelang == 'zh' else "Uploading to OSS...", type='logs')
+
+                # Initialize uploader
+                uploader = OSSUploader(oss_config)
+
+                # Upload with progress callback
+                def progress_callback(consumed, total):
+                    percent = (consumed / total) * 100
+                    self._signal(text=f"OSS {percent:.1f}%", type='logs')
+
+                # Upload with retry
+                result = uploader.upload_file_with_retry(
+                    video_file,
+                    callback=progress_callback
+                )
+
+                if result['success']:
+                    oss_video_url = result['url']
+                    config.logger.info(f"[OSS] Upload success: {oss_video_url}")
+                    self._signal(text=f"[OK] OSS: {oss_video_url}", type='logs')
+                else:
+                    config.logger.error(f"[OSS] Upload failed: {result.get('error', 'Unknown error')}")
+                    self._signal(text=f"[X] OSS upload failed: {result.get('error', 'Unknown error')}", type='logs')
+
+            except Exception as e:
+                config.logger.error(f"[OSS] Upload error: {e}")
+                import traceback
+                config.logger.error(traceback.format_exc())
+
+        # Start OSS upload in background thread
+        import threading as _th
+        upload_thread = _th.Thread(target=_upload_to_oss, daemon=True)
+        upload_thread.start()
+
+        # Wait for upload to complete (with timeout)
+        upload_thread.join(timeout=oss_upload_timeout)
+
         self._signal(text=f"{self.cfg['name']}", type='succeed')
         tools.send_notification(config.transobj['Succeed'], f"{self.cfg['basename']}")
         # HearSight integration: summarize subtitles and store (optional, non-blocking)
@@ -659,10 +769,13 @@ class TransCreate(BaseTask):
                         continue
                 if not segments:
                     return
+                # Use OSS URL if available, otherwise use local path
+                media_path = oss_video_url if oss_video_url else (self.cfg.get('targetdir_mp4') or self.cfg.get('name'))
                 payload = {
                     'segments': segments,
-                    'media_path': self.cfg.get('targetdir_mp4') or self.cfg.get('name'),
+                    'media_path': media_path,
                     'title': self.cfg.get('basename'),
+                    'is_oss': bool(oss_video_url),  # 标记是否使用 OSS URL
                 }
                 url = hs_url.rstrip('/') + (hs_path if hs_path.startswith('/') else '/' + hs_path)
                 resp = requests.post(url, json=payload, timeout=60)
@@ -675,187 +788,94 @@ class TransCreate(BaseTask):
         import threading as _th
         _th.Thread(target=_hearsight_post, daemon=True).start()
 
-        # Local HearSight integration: generate summary and store in vector database
-        def _hearsight_local():
+        # Qdrant export integration (non-blocking) - replaces old HearSight local flow
+        def _export_to_qdrant():
+            """Export translated SRT to Qdrant (non-blocking, non-fatal)"""
             try:
-                from videotrans.configure import config as _cfg
+                from videotrans.qdrant_export import export_to_qdrant, ExportConfig, validate_export_config
+                import logging
 
-                # Debug: Log all params
-                _cfg.logger.info(f"[HearSight Debug] enable_hearsight param: {_cfg.params.get('enable_hearsight', False)}")
-                _cfg.logger.info(f"[HearSight Debug] all params keys: {list(_cfg.params.keys())}")
+                logger = logging.getLogger(__name__)
 
-                # Check if enable_hearsight is checked
-                if not _cfg.params.get('enable_hearsight', False):
-                    _cfg.logger.info("[HearSight] Not enabled, skipping summary generation")
+                # Check if enable_hearsight (Qdrant export) is enabled
+                if not config.params.get('enable_hearsight', False):
+                    logger.info("[Qdrant] Export disabled (enable_hearsight unchecked), skipping")
                     return
 
-                _cfg.logger.info("[HearSight] Enabled, starting summary generation...")
-
-                # Check if HearSight config exists
-                hearsight_cfg = getattr(_cfg, 'hearsight_config', None)
-                if not hearsight_cfg:
-                    _cfg.logger.warning("[HearSight] Config not found, skipping summary generation")
+                # Check if qdrant_enabled is also set (legacy compatibility)
+                if not config.params.get('qdrant_enabled', True):
+                    logger.info("[Qdrant] Export disabled (qdrant_enabled=False), skipping")
                     return
 
-                _cfg.logger.info(f"[HearSight] Config loaded: {list(hearsight_cfg.keys())}")
+                # Get selected folder_id from UI (if available)
+                folder_id = config.params.get('hearsight_folder_id', None)
+                logger.info(f"[Qdrant] Exporting to folder: {folder_id or 'uncategorized'}")
 
-                llm_cfg = hearsight_cfg.get('llm', {})
-                if not llm_cfg.get('api_key'):
-                    _cfg.logger.warning("[HearSight] API key not configured, skipping summary generation")
+                # Build export config from global config
+                export_config = ExportConfig(
+                    qdrant_url=config.params.get('qdrant_url', 'http://localhost:6333'),
+                    qdrant_api_key=config.params.get('qdrant_api_key', None) or None,
+                    enable_summaries=config.params.get('qdrant_export_summaries', True),
+                    llm_api_url=config.params.get('qdrant_llm_api_url', ''),
+                    llm_api_key=config.params.get('qdrant_llm_api_key', ''),
+                    llm_model=config.params.get('qdrant_llm_model', 'deepseek-ai/DeepSeek-V3'),
+                    embedding_api_url=config.params.get('qdrant_embedding_api_url', ''),
+                    embedding_api_key=config.params.get('qdrant_embedding_api_key', ''),
+                    embedding_model=config.params.get('qdrant_embedding_model', 'BAAI/bge-large-zh-v1.5'),
+                    folder_id=folder_id  # 添加folder_id参数
+                )
+
+                # Validate config
+                is_valid, error_msg = validate_export_config(export_config)
+                if not is_valid:
+                    logger.warning(f"Qdrant export skipped: {error_msg}")
                     return
-
-                _cfg.logger.info("[HearSight] API key configured")
 
                 # Find SRT file (prefer target, fallback to source)
                 srt_file = None
-                _cfg.logger.info(f"[HearSight] Looking for SRT files...")
-                _cfg.logger.info(f"   target_sub: {self.cfg.get('target_sub', 'None')}")
-                _cfg.logger.info(f"   source_sub: {self.cfg.get('source_sub', 'None')}")
-
-                try:
-                    if self.cfg.get('target_sub') and Path(self.cfg['target_sub']).exists():
-                        srt_file = self.cfg['target_sub']
-                        _cfg.logger.info(f"[HearSight] Found target SRT: {srt_file}")
-                    elif self.cfg.get('source_sub') and Path(self.cfg['source_sub']).exists():
-                        srt_file = self.cfg['source_sub']
-                        _cfg.logger.info(f"[HearSight] Found source SRT: {srt_file}")
-                except Exception as e:
-                    _cfg.logger.error(f"[HearSight] Error checking SRT files: {e}")
+                if self.cfg.get('target_sub') and Path(self.cfg['target_sub']).exists():
+                    srt_file = self.cfg['target_sub']
+                    target_language = self.cfg.get('target_language_code', 'zh-cn')
+                elif self.cfg.get('source_sub') and Path(self.cfg['source_sub']).exists():
+                    srt_file = self.cfg['source_sub']
+                    target_language = self.cfg.get('source_language_code', 'zh-cn')
 
                 if not srt_file:
-                    _cfg.logger.warning("[HearSight] No SRT file found, skipping HearSight summary")
+                    logger.warning("Qdrant export skipped: No SRT file found")
                     return
 
-                _cfg.logger.info(f"[HearSight] Starting summary generation for: {srt_file}")
+                # Get video information
+                video_path = oss_video_url if oss_video_url else self.cfg.get('targetdir_mp4', self.cfg.get('name', ''))
+                video_title = self.cfg.get('basename', '')
 
-                # Import HearSight modules
-                from videotrans.hearsight.segment_merger import merge_srt_to_paragraphs
-                from videotrans.hearsight.summarizer import generate_summary, generate_paragraph_summaries
-                from videotrans.hearsight.vector_store import get_vector_store
+                logger.info(f"Starting Qdrant export for: {video_title}")
 
-                # Step 1: Merge paragraphs
-                merge_cfg = hearsight_cfg.get('merge', {})
-                paragraphs = merge_srt_to_paragraphs(
+                # Export (this may take time, but we don't block the UI)
+                result = export_to_qdrant(
                     srt_path=srt_file,
-                    max_gap=merge_cfg.get('max_gap', 2.0),
-                    max_duration=merge_cfg.get('max_duration', 30.0),
-                    max_chars=merge_cfg.get('max_chars', 200)
+                    video_path=video_path,
+                    video_title=video_title,
+                    language=target_language,
+                    config=export_config
                 )
 
-                if not paragraphs:
-                    _cfg.logger.warning("No paragraphs generated from SRT file")
-                    return
-
-                _cfg.logger.info(f"Merged {len(paragraphs)} paragraphs")
-
-                # Step 2: Generate overall summary
-                summary = generate_summary(
-                    paragraphs=paragraphs,
-                    api_key=llm_cfg['api_key'],
-                    base_url=llm_cfg.get('base_url', 'https://api.openai.com/v1'),
-                    model=llm_cfg.get('model', 'gpt-3.5-turbo'),
-                    temperature=llm_cfg.get('temperature', 0.3),
-                    timeout=llm_cfg.get('timeout', 120)
-                )
-
-                _cfg.logger.info(f"Generated overall summary: {summary.get('topic', 'N/A')}")
-
-                # Step 3: Generate paragraph summaries
-                paragraphs_with_summaries = generate_paragraph_summaries(
-                    paragraphs=paragraphs,
-                    api_key=llm_cfg['api_key'],
-                    base_url=llm_cfg.get('base_url', 'https://api.openai.com/v1'),
-                    model=llm_cfg.get('model', 'gpt-3.5-turbo'),
-                    temperature=llm_cfg.get('temperature', 0.3),
-                    timeout=llm_cfg.get('timeout', 60)
-                )
-
-                _cfg.logger.info(f"Generated {len(paragraphs_with_summaries)} paragraph summaries")
-
-                # Step 4: Save summary to file
-                try:
-                    summary_file = Path(self.cfg['target_dir']) / 'summary.txt'
-                    with open(summary_file, 'w', encoding='utf-8') as f:
-                        f.write("=" * 80 + "\n")
-                        f.write("视频智能摘要 (HearSight)\n")
-                        f.write("=" * 80 + "\n\n")
-                        f.write(f"视频文件: {self.cfg.get('basename', '')}\n")
-                        f.write(f"原语言: {self.cfg.get('source_language', '')}\n")
-                        f.write(f"目标语言: {self.cfg.get('target_language', '')}\n")
-                        f.write(f"生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-                        f.write("\n" + "=" * 80 + "\n")
-                        f.write("整体摘要\n")
-                        f.write("=" * 80 + "\n\n")
-
-                        # 提取摘要文本（summary是字典）
-                        if isinstance(summary, dict):
-                            topic = summary.get('topic', '')
-                            summary_text = summary.get('summary', '')
-                            if topic:
-                                f.write(f"主题: {topic}\n\n")
-                            f.write(f"{summary_text}\n\n")
-                        else:
-                            # 兼容旧格式（如果返回的是字符串）
-                            f.write(str(summary) + "\n\n")
-
-                        f.write("=" * 80 + "\n")
-                        f.write("段落摘要\n")
-                        f.write("=" * 80 + "\n\n")
-                        for i, para in enumerate(paragraphs_with_summaries, 1):
-                            f.write(f"段落 {i}:\n")
-                            f.write(f"时间: {para['start_time']} --> {para['end_time']}\n")
-                            f.write(f"摘要: {para['summary']}\n")
-                            f.write(f"原文:\n{para['text']}\n")
-                            f.write("-" * 80 + "\n\n")
-                    _cfg.logger.info(f"[OK] Summary saved to: {summary_file}")
-                except Exception as e:
-                    _cfg.logger.error(f"[Failed] Failed to save summary to file: {e}")
-
-                # Step 5: Store in vector database
-                try:
-                    from videotrans.hearsight.vector_store import get_vector_store
-                    import hashlib
-
-                    video_path = self.cfg.get('name', '')
-
-                    # 生成 transcript_id（基于视频路径的hash）
-                    transcript_id = hashlib.md5(video_path.encode('utf-8')).hexdigest()[:16]
-                    _cfg.logger.info(f"[HearSight] Generated transcript_id: {transcript_id}")
-
-                    metadata = {
-                        'basename': self.cfg.get('basename', ''),
-                        'source_language': self.cfg.get('source_language_code', ''),
-                        'target_language': self.cfg.get('target_language_code', ''),
-                        'app_mode': self.cfg.get('app_mode', ''),
-                        'transcript_id': transcript_id  # 直接包含 transcript_id
-                    }
-
-                    vector_store = get_vector_store()
-                    success = vector_store.store_summary(
-                        video_path=video_path,
-                        summary=summary,
-                        paragraphs=paragraphs_with_summaries,
-                        metadata=metadata
+                if result.success:
+                    logger.info(f"✓ Qdrant export succeeded: video_id={result.video_id}, chunks={result.chunks_count}")
+                    tools.send_notification(
+                        "已导出到 Qdrant 向量库" if config.defaulelang == 'zh' else "Exported to Qdrant",
+                        f"{video_title} ({result.chunks_count} chunks)"
                     )
-
-                    if success:
-                        _cfg.logger.info(f"[HearSight] Successfully stored summary in vector database with transcript_id={transcript_id}")
-                    else:
-                        _cfg.logger.warning(f"[HearSight] Failed to store summary in vector database")
-                except Exception as e:
-                    _cfg.logger.warning(f"[HearSight] Failed to store in vector database: {e}")
+                else:
+                    logger.error(f"✗ Qdrant export failed: {result.error_message}")
 
             except Exception as e:
-                try:
-                    from videotrans.configure import config as _cfg
-                    _cfg.logger.error(f"HearSight local summary error: {e}")
-                    import traceback
-                    _cfg.logger.error(traceback.format_exc())
-                except Exception:
-                    pass
+                # Log error but don't fail the translation task
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Qdrant export error (non-fatal): {e}", exc_info=True)
 
-        # Start local HearSight processing in background thread
-        _th.Thread(target=_hearsight_local, daemon=True).start()
+        # Start Qdrant export in background thread
+        _th.Thread(target=_export_to_qdrant, daemon=True).start()
 
         try:
             if self.cfg['only_video']:
@@ -956,8 +976,24 @@ class TransCreate(BaseTask):
             self.cfg['source_wav']
         ]
         rs = tools.runffmpeg(cmd)
+
+        # 验证音频文件是否成功创建
         if not is_separate:
-            return rs
+            # 等待文件系统同步（Windows 上可能需要短暂延迟）
+            import time
+            max_retries = 10
+            retry_delay = 0.1  # 100ms
+
+            for i in range(max_retries):
+                if tools.vail_file(self.cfg['source_wav']):
+                    config.logger.info(f"音频文件创建成功: {self.cfg['source_wav']}")
+                    return rs
+                time.sleep(retry_delay)
+
+            # 如果文件仍不存在，记录错误
+            error_msg = f"音频文件创建失败: {self.cfg['source_wav']} 不存在，尽管 ffmpeg 返回成功"
+            config.logger.error(error_msg)
+            raise RuntimeError(error_msg)
 
         # 继续人声分离
         tmpdir = config.TEMP_DIR + f"/{time.time()}"

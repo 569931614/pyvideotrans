@@ -423,11 +423,75 @@ class HearSightConfigDialog(QDialog):
         self.vector_type_combo = QComboBox()
         self.vector_type_combo.addItems([
             "ChromaDB (本地)",
+            "Qdrant (推荐)",
             "火山引擎向量化服务"
         ])
         self.vector_type_combo.setMinimumWidth(350)
         self.vector_type_combo.currentIndexChanged.connect(self._on_vector_type_changed)
         vector_layout.addRow(vector_type_label, self.vector_type_combo)
+
+        # Qdrant 配置容器
+        self.qdrant_widget = QGroupBox()
+        qdrant_layout = QFormLayout()
+        qdrant_layout.setSpacing(12)
+        qdrant_layout.setLabelAlignment(Qt.AlignRight | Qt.AlignVCenter)
+
+        # Qdrant URL
+        qdrant_url_label = QLabel("🌐 Qdrant URL:")
+        qdrant_url_label.setStyleSheet("QLabel { color: #2d3748; background-color: transparent; }")
+        self.qdrant_url_input = QLineEdit()
+        self.qdrant_url_input.setPlaceholderText("例如: http://localhost:6333")
+        self.qdrant_url_input.setText("http://localhost:6333")
+        self.qdrant_url_input.setMinimumWidth(350)
+        qdrant_layout.addRow(qdrant_url_label, self.qdrant_url_input)
+
+        # Qdrant API Key (可选)
+        qdrant_api_key_label = QLabel("🔑 API Key (可选):")
+        qdrant_api_key_label.setStyleSheet("QLabel { color: #2d3748; background-color: transparent; }")
+        self.qdrant_api_key_input = QLineEdit()
+        self.qdrant_api_key_input.setEchoMode(QLineEdit.Password)
+        self.qdrant_api_key_input.setPlaceholderText("Qdrant API Key (本地部署可留空)")
+        self.qdrant_api_key_input.setMinimumWidth(350)
+        qdrant_layout.addRow(qdrant_api_key_label, self.qdrant_api_key_input)
+
+        # Embedding API URL
+        qdrant_embed_url_label = QLabel("🌐 Embedding API URL:")
+        qdrant_embed_url_label.setStyleSheet("QLabel { color: #2d3748; background-color: transparent; }")
+        self.qdrant_embed_url_input = QLineEdit()
+        self.qdrant_embed_url_input.setPlaceholderText("例如: https://api.siliconflow.cn/v1")
+        self.qdrant_embed_url_input.setText("https://api.siliconflow.cn/v1")
+        self.qdrant_embed_url_input.setMinimumWidth(350)
+        qdrant_layout.addRow(qdrant_embed_url_label, self.qdrant_embed_url_input)
+
+        # Embedding API Key
+        qdrant_embed_key_label = QLabel("🔑 Embedding API Key:")
+        qdrant_embed_key_label.setStyleSheet("QLabel { color: #2d3748; background-color: transparent; }")
+        self.qdrant_embed_key_input = QLineEdit()
+        self.qdrant_embed_key_input.setEchoMode(QLineEdit.Password)
+        self.qdrant_embed_key_input.setPlaceholderText("输入Embedding API密钥")
+        self.qdrant_embed_key_input.setMinimumWidth(350)
+        qdrant_layout.addRow(qdrant_embed_key_label, self.qdrant_embed_key_input)
+
+        # Embedding Model
+        qdrant_embed_model_label = QLabel("🤖 Embedding 模型:")
+        qdrant_embed_model_label.setStyleSheet("QLabel { color: #2d3748; background-color: transparent; }")
+        self.qdrant_embed_model_input = QLineEdit()
+        self.qdrant_embed_model_input.setPlaceholderText("例如: BAAI/bge-large-zh-v1.5")
+        self.qdrant_embed_model_input.setText("BAAI/bge-large-zh-v1.5")
+        self.qdrant_embed_model_input.setMinimumWidth(350)
+        qdrant_layout.addRow(qdrant_embed_model_label, self.qdrant_embed_model_input)
+
+        self.qdrant_widget.setLayout(qdrant_layout)
+        self.qdrant_widget.setStyleSheet("""
+            QGroupBox {
+                border: 1px solid #d0dae6;
+                border-radius: 8px;
+                margin-top: 8px;
+                padding: 12px;
+                background: white;
+            }
+        """)
+        vector_layout.addRow(self.qdrant_widget)
 
         # 火山引擎配置容器
         self.volcengine_widget = QGroupBox()
@@ -607,13 +671,14 @@ class HearSightConfigDialog(QDialog):
         # 按钮添加到主布局（在滚动区域外，固定在底部）
         main_layout.addLayout(button_layout)
 
-        # 初始化时隐藏火山引擎配置
+        # 初始化时隐藏向量配置
         self._on_vector_type_changed(0)
 
     def _on_vector_type_changed(self, index):
         """向量存储类型改变时的处理"""
-        # index 0: ChromaDB, 1: 火山引擎
-        self.volcengine_widget.setVisible(index == 1)
+        # index 0: ChromaDB, 1: Qdrant, 2: 火山引擎
+        self.qdrant_widget.setVisible(index == 1)
+        self.volcengine_widget.setVisible(index == 2)
 
     def load_config(self):
         """加载配置"""
@@ -655,10 +720,21 @@ class HearSightConfigDialog(QDialog):
             vector_cfg = hearsight_cfg.get('vector', {})
             if vector_cfg:
                 vector_type = vector_cfg.get('type', 'chromadb')
-                if vector_type == 'volcengine':
+                if vector_type == 'qdrant':
                     self.vector_type_combo.setCurrentIndex(1)
+                elif vector_type == 'volcengine':
+                    self.vector_type_combo.setCurrentIndex(2)
                 else:
                     self.vector_type_combo.setCurrentIndex(0)
+
+                # Qdrant配置
+                qdrant_cfg = vector_cfg.get('qdrant', {})
+                if qdrant_cfg:
+                    self.qdrant_url_input.setText(qdrant_cfg.get('url', 'http://localhost:6333'))
+                    self.qdrant_api_key_input.setText(qdrant_cfg.get('api_key', ''))
+                    self.qdrant_embed_url_input.setText(qdrant_cfg.get('embedding_api_url', 'https://api.siliconflow.cn/v1'))
+                    self.qdrant_embed_key_input.setText(qdrant_cfg.get('embedding_api_key', ''))
+                    self.qdrant_embed_model_input.setText(qdrant_cfg.get('embedding_model', 'BAAI/bge-large-zh-v1.5'))
 
                 # 火山引擎配置
                 volc_cfg = vector_cfg.get('volcengine', {})
@@ -692,11 +768,50 @@ class HearSightConfigDialog(QDialog):
 
         # 向量化服务验证
         vector_type_index = self.vector_type_combo.currentIndex()
-        if vector_type_index == 1:  # 火山引擎
+        if vector_type_index == 1:  # Qdrant
+            qdrant_embed_key = self.qdrant_embed_key_input.text().strip()
+            if not qdrant_embed_key:
+                QMessageBox.warning(self, "警告", "请输入Qdrant Embedding API Key")
+                return
+        elif vector_type_index == 2:  # 火山引擎
             volc_api_key = self.volc_api_key_input.text().strip()
             if not volc_api_key:
                 QMessageBox.warning(self, "警告", "请输入火山引擎API Key")
                 return
+
+        # 构建向量配置
+        if vector_type_index == 1:  # Qdrant
+            vector_type = 'qdrant'
+            vector_config = {
+                'type': 'qdrant',
+                'qdrant': {
+                    'url': self.qdrant_url_input.text().strip(),
+                    'api_key': self.qdrant_api_key_input.text().strip(),
+                    'embedding_api_url': self.qdrant_embed_url_input.text().strip(),
+                    'embedding_api_key': self.qdrant_embed_key_input.text().strip(),
+                    'embedding_model': self.qdrant_embed_model_input.text().strip()
+                },
+                'volcengine': {}
+            }
+        elif vector_type_index == 2:  # 火山引擎
+            vector_type = 'volcengine'
+            vector_config = {
+                'type': 'volcengine',
+                'qdrant': {},
+                'volcengine': {
+                    'api_key': self.volc_api_key_input.text().strip(),
+                    'base_url': self.volc_base_url_input.text().strip(),
+                    'collection_name': self.volc_collection_input.text().strip(),
+                    'embedding_model': self.volc_model_input.text().strip()
+                }
+            }
+        else:  # ChromaDB
+            vector_type = 'chromadb'
+            vector_config = {
+                'type': 'chromadb',
+                'qdrant': {},
+                'volcengine': {}
+            }
 
         # 构建配置
         hearsight_cfg = {
@@ -716,20 +831,45 @@ class HearSightConfigDialog(QDialog):
                 'paragraph': self.para_prompt_input.toPlainText().strip(),
                 'overall': self.overall_prompt_input.toPlainText().strip()
             },
-            'vector': {
-                'type': 'volcengine' if vector_type_index == 1 else 'chromadb',
-                'volcengine': {
-                    'api_key': self.volc_api_key_input.text().strip(),
-                    'base_url': self.volc_base_url_input.text().strip(),
-                    'collection_name': self.volc_collection_input.text().strip(),
-                    'embedding_model': self.volc_model_input.text().strip()
-                }
-            }
+            'vector': vector_config
         }
 
         try:
             # 保存到config
             config.hearsight_config = hearsight_cfg
+
+            # 同时更新 cfg.json 中的 Qdrant 配置
+            if vector_type == 'qdrant':
+                config.qdrant_enabled = True
+                config.qdrant_export_summaries = True
+                config.qdrant_url = self.qdrant_url_input.text().strip()
+                config.qdrant_api_key = self.qdrant_api_key_input.text().strip()
+                config.qdrant_embedding_api_url = self.qdrant_embed_url_input.text().strip()
+                config.qdrant_embedding_api_key = self.qdrant_embed_key_input.text().strip()
+                config.qdrant_embedding_model = self.qdrant_embed_model_input.text().strip()
+                # 使用相同的 API 配置作为 LLM API
+                config.qdrant_llm_api_url = base_url
+                config.qdrant_llm_api_key = api_key
+                config.qdrant_llm_model = model
+
+                # 【修复】同时保存到 config.params 以便 trans_create.py 能正确读取
+                config.params['qdrant_enabled'] = True
+                config.params['qdrant_export_summaries'] = True
+                config.params['qdrant_url'] = self.qdrant_url_input.text().strip()
+                config.params['qdrant_api_key'] = self.qdrant_api_key_input.text().strip()
+                config.params['qdrant_embedding_api_url'] = self.qdrant_embed_url_input.text().strip()
+                config.params['qdrant_embedding_api_key'] = self.qdrant_embed_key_input.text().strip()
+                config.params['qdrant_embedding_model'] = self.qdrant_embed_model_input.text().strip()
+                config.params['qdrant_llm_api_url'] = base_url
+                config.params['qdrant_llm_api_key'] = api_key
+                config.params['qdrant_llm_model'] = model
+
+                # 持久化 params 到 params.json
+                from videotrans.configure import config as cfg_module
+                cfg_module.getset_params(config.params)
+            else:
+                config.qdrant_enabled = False
+                config.params['qdrant_enabled'] = False
 
             # 持久化到文件（如果有配置文件路径）
             if hasattr(config, 'ROOT_DIR'):

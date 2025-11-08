@@ -150,6 +150,34 @@ class WinAction(WinActionSub):
                     pass
         self.processbtns = {}
 
+    # 清空任务列表（用户主动触发）
+    def clear_task_list(self):
+        """清空所有任务进度条"""
+        # 如果有任务正在执行，提示用户
+        if config.current_status == 'ing':
+            from PySide6 import QtWidgets
+            reply = QtWidgets.QMessageBox.question(
+                self.main,
+                '确认操作' if config.defaulelang == 'zh' else 'Confirm',
+                '有任务正在执行中，是否停止所有任务并清空列表？' if config.defaulelang == 'zh'
+                else 'Tasks are running. Stop all tasks and clear the list?',
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+            )
+            if reply != QtWidgets.QMessageBox.Yes:
+                return
+            # 停止所有任务
+            self.update_status('stop')
+
+        # 清空所有进度按钮
+        self.delete_process()
+        # 清空任务列表
+        self.obj_list = []
+        self.queue_mp4 = []
+        # 清空已停止任务集合
+        config.stoped_uuid_set.clear()
+        # 更新视频选择提示
+        self.main.source_mp4.setText(config.transobj["No select videos"])
+
     # 删除单个任务
     def delete_single_task(self, uuid):
         """删除指定uuid的任务"""
@@ -697,6 +725,10 @@ class WinAction(WinActionSub):
         self.cfg['only_video'] = self.main.only_video.isChecked()
         self.cfg['clear_cache'] = True if self.main.clear_cache.isChecked() else False
 
+        # 保存HearSight文件夹选择
+        selected_folder_id = self.main.hearsight_folder_combo.currentData()
+        config.params['hearsight_folder_id'] = selected_folder_id  # None表示全部视频
+
         # 核对识别是否正确
         if self.check_reccogn() is not True:
             self.main.startbtn.setDisabled(False)
@@ -970,6 +1002,8 @@ class WinAction(WinActionSub):
         self.main.stop_djs.hide()
         if type == 'ing':
             # 重设为开始状态
+            # 清空已停止任务集合，开始新的任务批次
+            config.stoped_uuid_set.clear()
             self.disabled_widget(True)
             self.main.startbtn.setText(config.transobj["starting..."])
             return
@@ -1028,6 +1062,12 @@ class WinAction(WinActionSub):
             if d['type'] in ['error', 'succeed']:
                 if d.get('uuid'):
                     config.stoped_uuid_set.add(d['uuid'])
+
+                # 检查是否所有任务都已完成（成功或失败）
+                if len(config.stoped_uuid_set) >= len(self.obj_list) and len(self.obj_list) > 0:
+                    # 所有任务都已完成，触发 end 事件
+                    self.update_status('end')
+                    return
 
                 self.edit_subtitle_type = 'edit_subtitle_source'
                 self.wait_subtitle = None

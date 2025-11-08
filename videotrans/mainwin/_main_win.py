@@ -39,6 +39,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setWindowIcon(QIcon(f"{config.ROOT_DIR}/videotrans/styles/icon.ico"))
         self.setupUi(self)
 
+        # DEBUG: 检查文件夹控件是否创建
+        print(f"[DEBUG] setupUi完成后检查控件:")
+        print(f"  - enable_hearsight 存在: {hasattr(self, 'enable_hearsight')}")
+        print(f"  - hearsight_folder_label 存在: {hasattr(self, 'hearsight_folder_label')}")
+        print(f"  - hearsight_folder_combo 存在: {hasattr(self, 'hearsight_folder_combo')}")
+        if hasattr(self, 'hearsight_folder_combo'):
+            print(f"  - hearsight_folder_combo 类型: {type(self.hearsight_folder_combo)}")
+            print(f"  - hearsight_folder_combo 父控件: {self.hearsight_folder_combo.parent()}")
+
         self._replace_placeholders()
         self.initUI()
 
@@ -59,6 +68,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         QTimer.singleShot(50, self._init_sidebar)
 
         self._retranslateUi_from_logic()
+
+        # 确保文件夹选择器在UI初始化后立即可见
+        if hasattr(self, 'hearsight_folder_label') and hasattr(self, 'hearsight_folder_combo'):
+            self.hearsight_folder_label.setVisible(True)
+            self.hearsight_folder_combo.setVisible(True)
+
         self.showMaximized()  # 启动时最大化窗口
         QTimer.singleShot(50, self._set_cache_set)
         QTimer.singleShot(100, self._start_subform)
@@ -131,6 +146,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.enable_hearsight.setText('智能摘要' if config.defaulelang == 'zh' else 'Smart Summary')
         self.enable_hearsight.setToolTip(
             '完成翻译后自动生成智能摘要并存储到向量库' if config.defaulelang == 'zh' else 'Automatically generate smart summary after translation and store in vector database')
+
+        # 文件夹选择器文本
+        self.hearsight_folder_label.setText("分类文件夹:" if config.defaulelang == 'zh' else "Category Folder:")
+        self.hearsight_folder_label.setToolTip(
+            '选择用于智能摘要的视频分类文件夹' if config.defaulelang == 'zh' else 'Select category folder for smart summary')
+
         self.is_separate.setText('保留原始背景音' if config.defaulelang == 'zh' else 'Retain original background sound')
         self.is_separate.setToolTip(
             '若选中则分离人声和背景声，最终输出视频再将背景声嵌入' if config.defaulelang == 'zh' else 'If selected, separate human voice and background sound, \nand finally output video will embed background sound')
@@ -468,7 +489,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.toolBar.addSeparator()
                 self.toolBar.addAction(self.action_html_ui)
             self.action_html_ui.toggled.connect(self._toggle_html_ui)
-            # Default to HTML UI on startup
+            # 默认启用 HTML UI（已支持文件夹选择器）
             QTimer.singleShot(10, lambda: self.action_html_ui.setChecked(True))
         except Exception:
             pass
@@ -609,6 +630,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.import_sub.clicked.connect(self.win_action.import_sub_fun)
 
         self.startbtn.clicked.connect(self.win_action.check_start)
+        self.clear_task_btn.clicked.connect(self.win_action.clear_task_list)
         self.btn_save_dir.clicked.connect(self.win_action.get_save_dir)
         self.save_dir_label.clicked.connect(self.win_action.open_save_dir)
         self.btn_get_video.clicked.connect(self.win_action.get_mp4)
@@ -638,6 +660,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """Switch between legacy Qt UI and new HTML UI."""
         try:
             if enabled:
+                print("[INFO] 切换到 HTML UI - 注意：文件夹选择器仅在 Qt UI 中可用")
                 if self.html_view is None:
                     self.html_view = HtmlMainView(self)
                 if self._central_stack is not None:
@@ -648,6 +671,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 else:
                     self.setCentralWidget(self.html_view)
             else:
+                print("[INFO] 切换到 Qt UI - 文件夹选择器已可用")
                 if self._central_stack is not None:
                     self._central_stack.setCurrentWidget(self._original_central)
                 else:
@@ -675,6 +699,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.stop_djs.setCursor(Qt.PointingHandCursor)
         self.continue_compos.setCursor(Qt.PointingHandCursor)
         self.startbtn.setCursor(Qt.PointingHandCursor)
+        self.clear_task_btn.setCursor(Qt.PointingHandCursor)
         self.btn_get_video.setCursor(Qt.PointingHandCursor)
         self.btn_save_dir.setCursor(Qt.PointingHandCursor)
         self.listen_btn.setCursor(Qt.PointingHandCursor)
@@ -932,6 +957,111 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         except Exception as e:
             print(f"初始化智能摘要按钮失败: {e}")
+
+        # 加载文件夹列表
+        self._load_hearsight_folders()
+
+        # 在加载完成后再次确保控件可见
+        QTimer.singleShot(100, self._ensure_folder_controls_visible)
+
+    def _ensure_folder_controls_visible(self):
+        """确保文件夹控件可见的辅助方法"""
+        try:
+            if hasattr(self, 'hearsight_folder_label') and hasattr(self, 'hearsight_folder_combo'):
+                # 检查父控件状态
+                label_parent = self.hearsight_folder_label.parent()
+                combo_parent = self.hearsight_folder_combo.parent()
+
+                print(f"[DEBUG] 标签父控件: {label_parent}")
+                print(f"[DEBUG] 标签父控件可见: {label_parent.isVisible() if label_parent else 'N/A'}")
+                print(f"[DEBUG] 下拉框父控件: {combo_parent}")
+                print(f"[DEBUG] 下拉框父控件可见: {combo_parent.isVisible() if combo_parent else 'N/A'}")
+
+                # 检查是否被添加到布局中
+                print(f"[DEBUG] 标签有布局: {self.hearsight_folder_label.layout() is not None}")
+                print(f"[DEBUG] 下拉框有布局: {self.hearsight_folder_combo.layout() is not None}")
+
+                # 设置可见
+                self.hearsight_folder_label.setVisible(True)
+                self.hearsight_folder_combo.setVisible(True)
+                self.hearsight_folder_label.show()
+                self.hearsight_folder_combo.show()
+
+                print(f"[DEBUG] _ensure_folder_controls_visible 执行完成")
+                print(f"[DEBUG] 标签可见: {self.hearsight_folder_label.isVisible()}")
+                print(f"[DEBUG] 下拉框可见: {self.hearsight_folder_combo.isVisible()}")
+        except Exception as e:
+            import traceback
+            print(f"[ERROR] 确保控件可见失败: {e}")
+            traceback.print_exc()
+
+    def _load_hearsight_folders(self):
+        """加载HearSight文件夹列表到下拉框"""
+        try:
+            print("[DEBUG] _load_hearsight_folders 开始")
+            print(f"[DEBUG] hearsight_folder_combo 存在: {hasattr(self, 'hearsight_folder_combo')}")
+
+            from videotrans.hearsight.vector_store import get_vector_store
+
+            # 清空现有选项
+            self.hearsight_folder_combo.clear()
+            print("[DEBUG] 已清空下拉框")
+
+            # 添加"全部视频"选项
+            self.hearsight_folder_combo.addItem(
+                "全部视频" if config.defaulelang == 'zh' else "All Videos",
+                None  # None 表示不过滤
+            )
+            print("[DEBUG] 已添加'全部视频'选项")
+
+            # 获取文件夹列表
+            vector_store = get_vector_store()
+            folders = vector_store.list_folders()
+            print(f"[DEBUG] 获取到 {len(folders)} 个文件夹")
+
+            # 添加各个文件夹
+            for folder in folders:
+                folder_name = folder.get('name', '')
+                folder_id = folder.get('folder_id', '')
+                video_count = folder.get('video_count', 0)
+
+                # 显示文件夹名称和视频数量
+                display_text = f"{folder_name} ({video_count})"
+                self.hearsight_folder_combo.addItem(display_text, folder_id)
+                print(f"[DEBUG] 添加文件夹: {display_text}")
+
+            # 默认选中"全部视频"
+            self.hearsight_folder_combo.setCurrentIndex(0)
+
+            # 强制显示控件并更新布局
+            self.hearsight_folder_label.setVisible(True)
+            self.hearsight_folder_combo.setVisible(True)
+            self.hearsight_folder_label.show()
+            self.hearsight_folder_combo.show()
+
+            # 强制更新父控件布局
+            if self.hearsight_folder_label.parent():
+                self.hearsight_folder_label.parent().update()
+
+            # 强制重绘
+            self.hearsight_folder_label.repaint()
+            self.hearsight_folder_combo.repaint()
+
+            print(f"[HearSight] 加载了 {len(folders)} 个文件夹")
+            print(f"[DEBUG] 下拉框当前项数: {self.hearsight_folder_combo.count()}")
+            print(f"[DEBUG] 下拉框可见(after show): {self.hearsight_folder_combo.isVisible()}")
+            print(f"[DEBUG] 标签可见(after show): {self.hearsight_folder_label.isVisible()}")
+
+        except Exception as e:
+            import traceback
+            print(f"[HearSight] 加载文件夹列表失败: {e}")
+            traceback.print_exc()
+            # 出错时至少有一个选项
+            if self.hearsight_folder_combo.count() == 0:
+                self.hearsight_folder_combo.addItem(
+                    "全部视频" if config.defaulelang == 'zh' else "All Videos",
+                    None
+                )
 
     def _init_sidebar(self):
         """初始化垂直侧边栏"""

@@ -97,6 +97,7 @@ class Ui_peiyinrole(object):
         self.formLayout_4.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label_11)
         self.hecheng_role = QtWidgets.QComboBox()  # 这个是原始的，现在作为角色源
         self.hecheng_role.setMinimumSize(QtCore.QSize(0, 30))
+        self.hecheng_role.setEditable(True)  # 允许手动输入
         self.hecheng_role.addItems(['No'])
         self.formLayout_4.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.hecheng_role)
         self.horizontalLayout_10.addLayout(self.formLayout_4)

@@ -485,6 +485,19 @@ def getset_params(obj=None):
         "enable_preprocess": False,  # 视频预处理开关
         "trim_start": 0,  # 去掉头部秒数
         "trim_end": 0,  # 去掉尾部秒数
+
+        # Qdrant 向量数据库配置
+        "qdrant_enabled": True,  # 启用 Qdrant 导出
+        "qdrant_url": "http://localhost:6333",  # Qdrant 服务器地址
+        "qdrant_api_key": "",  # Qdrant API 密钥（可选）
+        "qdrant_export_summaries": True,  # 是否生成摘要
+        "qdrant_llm_api_url": "",  # LLM API 地址（用于生成摘要）
+        "qdrant_llm_api_key": "",  # LLM API 密钥
+        "qdrant_llm_model": "deepseek-ai/DeepSeek-V3",  # LLM 模型
+        "qdrant_embedding_api_url": "",  # Embedding API 地址
+        "qdrant_embedding_api_key": "",  # Embedding API 密钥
+        "qdrant_embedding_model": "BAAI/bge-large-zh-v1.5",  # Embedding 模型
+
         "deepl_authkey": "",
         "deepl_api": "",
         "deepl_gid": "",

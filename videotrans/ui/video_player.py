@@ -159,9 +159,22 @@ class VideoPlayerDialog(QDialog):
         """)
     
     def load_video(self):
-        """加载视频"""
-        print(f"📂 加载视频文件: {self.video_path}")
-        self.player.setSource(QUrl.fromLocalFile(self.video_path))
+        """加载视频（支持本地文件和URL）"""
+        print(f"📂 加载视频: {self.video_path}")
+
+        # 检查是否是URL（http/https）
+        if self.video_path.startswith(('http://', 'https://')):
+            # URL格式：直接使用QUrl
+            print(f"   类型: 在线视频 (URL)")
+            video_url = QUrl(self.video_path)
+        else:
+            # 本地文件：使用fromLocalFile
+            print(f"   类型: 本地文件")
+            video_url = QUrl.fromLocalFile(self.video_path)
+
+        print(f"   QUrl: {video_url.toString()}")
+        self.player.setSource(video_url)
+
         # 设置初始音量
         self.set_volume(70)
         print(f"✅ 视频加载命令已发送")

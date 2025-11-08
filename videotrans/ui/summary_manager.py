@@ -40,16 +40,23 @@ class SearchThread(QThread):
     finished = Signal(list)
     error = Signal(str)
 
-    def __init__(self, query: str, n_results: int = 10, parent=None):
+    def __init__(self, query: str, n_results: int = 10, folder_id: Optional[str] = None, parent=None):
         super().__init__(parent)
         self.query = query
         self.n_results = n_results
+        self.folder_id = folder_id
 
     def run(self):
         try:
             from videotrans.hearsight.vector_store import get_vector_store
             vector_store = get_vector_store()
-            results = vector_store.search(self.query, n_results=self.n_results)
+
+            # 根据文件夹ID决定使用哪个搜索方法
+            if self.folder_id:
+                results = vector_store.search_in_folder(self.query, self.folder_id, n_results=self.n_results)
+            else:
+                results = vector_store.search(self.query, n_results=self.n_results)
+
             self.finished.emit(results)
         except Exception as e:
             self.error.emit(str(e))
@@ -61,6 +68,8 @@ class SummaryManagerDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.videos = []
+        self.folders = []
+        self.current_folder_id = None  # 当前选中的文件夹ID（None表示"全部视频"）
         self.current_video = None
         self.current_video_path = None  # 存储当前视频路径
         self.search_thread = None
@@ -78,6 +87,7 @@ class SummaryManagerDialog(QDialog):
         """)
 
         self.init_ui()
+        self.load_folders()
         self.load_videos()
 
     def init_ui(self):
@@ -241,19 +251,25 @@ class SummaryManagerDialog(QDialog):
 
         layout.addLayout(search_layout)
 
-        # 主内容区域（三栏布局）
+        # 主内容区域（三栏布局：文件夹 | 视频 | 详情）
         splitter = QSplitter(Qt.Horizontal)
 
-        # 左侧：视频列表
-        left_panel = self.create_video_list_panel()
-        splitter.addWidget(left_panel)
+        # 左侧：文件夹列表
+        folder_panel = self.create_folder_list_panel()
+        splitter.addWidget(folder_panel)
+
+        # 中间：视频列表
+        video_panel = self.create_video_list_panel()
+        splitter.addWidget(video_panel)
 
         # 右侧：摘要详情
-        right_panel = self.create_detail_panel()
-        splitter.addWidget(right_panel)
+        detail_panel = self.create_detail_panel()
+        splitter.addWidget(detail_panel)
 
+        # 设置各列的相对宽度比例（文件夹:视频:详情 = 1:2:3）
         splitter.setStretchFactor(0, 1)
         splitter.setStretchFactor(1, 2)
+        splitter.setStretchFactor(2, 3)
 
         layout.addWidget(splitter)
 
@@ -336,6 +352,105 @@ class SummaryManagerDialog(QDialog):
 
         layout.addLayout(button_layout)
 
+    def create_folder_list_panel(self):
+        """创建文件夹列表面板"""
+        from PySide6.QtWidgets import QWidget, QMenu
+        from PySide6.QtCore import Qt
+
+        panel = QWidget()
+        layout = QVBoxLayout(panel)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        # 标题栏（带新建文件夹按钮）
+        header_layout = QHBoxLayout()
+        header_layout.setContentsMargins(0, 0, 0, 0)
+
+        label = QLabel("  📁 文件夹")
+        label.setStyleSheet("""
+            font-size: 16px;
+            font-weight: bold;
+            padding: 12px 8px 12px 16px;
+            color: #e8eef7;
+            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #1a1f3a, stop:1 #151a30);
+        """)
+        header_layout.addWidget(label)
+
+        # 新建文件夹按钮
+        self.new_folder_btn = QPushButton("＋")
+        self.new_folder_btn.setToolTip("新建文件夹 (Ctrl+N)")
+        self.new_folder_btn.setFixedSize(36, 36)
+        self.new_folder_btn.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #10b981, stop:1 #059669);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 20px;
+                font-weight: bold;
+                margin: 6px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #34d399, stop:1 #10b981);
+            }
+            QPushButton:pressed {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #059669, stop:1 #047857);
+            }
+        """)
+        self.new_folder_btn.clicked.connect(self.create_new_folder)
+        header_layout.addWidget(self.new_folder_btn)
+
+        header_widget = QWidget()
+        header_widget.setLayout(header_layout)
+        header_widget.setStyleSheet("""
+            QWidget {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #1a1f3a, stop:1 #151a30);
+                border: 2px solid #2a3244;
+                border-radius: 12px 12px 0 0;
+            }
+        """)
+        layout.addWidget(header_widget)
+
+        # 文件夹列表
+        self.folder_list = QListWidget()
+        self.folder_list.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.folder_list.customContextMenuRequested.connect(self.show_folder_context_menu)
+        self.folder_list.setStyleSheet("""
+            QListWidget {
+                border: 2px solid #2a3244;
+                border-top: none;
+                border-radius: 0 0 12px 12px;
+                background-color: #121829;
+                outline: none;
+            }
+            QListWidget::item {
+                padding: 14px 12px;
+                border-bottom: 1px solid #1a1f3a;
+                color: #a0abc0;
+                font-size: 14px;
+            }
+            QListWidget::item:selected {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 #8b5cf6, stop:1 #7c3aed);
+                color: white;
+                font-weight: bold;
+                border-radius: 8px;
+                border: none;
+            }
+            QListWidget::item:hover:!selected {
+                background-color: #1a1f3a;
+                border-radius: 8px;
+            }
+        """)
+        self.folder_list.itemClicked.connect(self.on_folder_selected)
+        layout.addWidget(self.folder_list)
+
+        return panel
+
     def create_video_list_panel(self):
         """创建视频列表面板"""
         from PySide6.QtWidgets import QWidget
@@ -360,6 +475,8 @@ class SummaryManagerDialog(QDialog):
 
         # 视频列表
         self.video_list = QListWidget()
+        self.video_list.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.video_list.customContextMenuRequested.connect(self.show_video_context_menu)
         self.video_list.setStyleSheet("""
             QListWidget {
                 border: 2px solid #2a3244;
@@ -498,10 +615,168 @@ class SummaryManagerDialog(QDialog):
 
         return panel
 
+    def load_folders(self):
+        """加载文件夹列表"""
+        try:
+            from videotrans.hearsight.vector_store import get_vector_store
+            vector_store = get_vector_store()
+            self.folders = vector_store.list_folders()
+
+            self.folder_list.clear()
+
+            # 添加"全部视频"伪文件夹
+            total_videos = sum(f.get('video_count', 0) for f in self.folders)
+            all_item = QListWidgetItem(f"📂 全部视频 ({total_videos})")
+            all_item.setData(Qt.UserRole, None)  # None 表示全部
+            self.folder_list.addItem(all_item)
+
+            # 添加实际文件夹
+            for folder in self.folders:
+                folder_name = folder.get('name', '未命名')
+                video_count = folder.get('video_count', 0)
+                folder_id = folder.get('folder_id')
+
+                item_text = f"📁 {folder_name} ({video_count})"
+                item = QListWidgetItem(item_text)
+                item.setData(Qt.UserRole, folder)
+                self.folder_list.addItem(item)
+
+            # 默认选中"全部视频"
+            self.folder_list.setCurrentRow(0)
+            self.current_folder_id = None
+
+        except Exception as e:
+            QMessageBox.critical(self, "错误", f"加载文件夹列表失败：\n{str(e)}")
+
+    def on_folder_selected(self, item: QListWidgetItem):
+        """文件夹被选中"""
+        folder = item.data(Qt.UserRole)
+        if folder is None:
+            # "全部视频"
+            self.current_folder_id = None
+        else:
+            self.current_folder_id = folder.get('folder_id')
+
+        # 重新加载视频列表
+        self.load_videos()
+
+    def create_new_folder(self):
+        """创建新文件夹"""
+        from PySide6.QtWidgets import QInputDialog
+
+        folder_name, ok = QInputDialog.getText(
+            self,
+            "新建文件夹",
+            "请输入文件夹名称:",
+            QLineEdit.Normal,
+            ""
+        )
+
+        if ok and folder_name:
+            try:
+                from videotrans.hearsight.vector_store import get_vector_store
+                vector_store = get_vector_store()
+                folder_id = vector_store.create_folder(folder_name)
+
+                if folder_id:
+                    QMessageBox.information(self, "成功", f"文件夹 '{folder_name}' 创建成功")
+                    self.load_folders()
+                else:
+                    QMessageBox.warning(self, "失败", "文件夹创建失败（可能名称已存在）")
+            except Exception as e:
+                QMessageBox.critical(self, "错误", f"创建文件夹失败：\n{str(e)}")
+
+    def show_folder_context_menu(self, pos):
+        """显示文件夹右键菜单"""
+        from PySide6.QtWidgets import QMenu
+
+        item = self.folder_list.itemAt(pos)
+        if not item:
+            return
+
+        folder = item.data(Qt.UserRole)
+        if folder is None:
+            # "全部视频"不显示右键菜单
+            return
+
+        folder_id = folder.get('folder_id')
+        folder_name = folder.get('name')
+
+        # 创建菜单
+        menu = QMenu(self)
+
+        # 重命名
+        rename_action = menu.addAction("🔄 重命名")
+        rename_action.triggered.connect(lambda: self.rename_folder(folder_id, folder_name))
+
+        # 删除（默认文件夹不能删除）
+        from videotrans.hearsight.vector_store import DEFAULT_FOLDER_ID
+        if folder_id != DEFAULT_FOLDER_ID:
+            delete_action = menu.addAction("🗑️ 删除")
+            delete_action.triggered.connect(lambda: self.delete_folder(folder_id, folder_name))
+
+        menu.exec(self.folder_list.mapToGlobal(pos))
+
+    def rename_folder(self, folder_id: str, old_name: str):
+        """重命名文件夹"""
+        from PySide6.QtWidgets import QInputDialog
+
+        new_name, ok = QInputDialog.getText(
+            self,
+            "重命名文件夹",
+            "请输入新名称:",
+            QLineEdit.Normal,
+            old_name
+        )
+
+        if ok and new_name and new_name != old_name:
+            try:
+                from videotrans.hearsight.vector_store import get_vector_store
+                vector_store = get_vector_store()
+                success = vector_store.rename_folder(folder_id, new_name)
+
+                if success:
+                    QMessageBox.information(self, "成功", f"文件夹已重命名为 '{new_name}'")
+                    self.load_folders()
+                else:
+                    QMessageBox.warning(self, "失败", "重命名失败（可能名称已存在）")
+            except Exception as e:
+                QMessageBox.critical(self, "错误", f"重命名文件夹失败：\n{str(e)}")
+
+    def delete_folder(self, folder_id: str, folder_name: str):
+        """删除文件夹"""
+        reply = QMessageBox.question(
+            self,
+            "删除文件夹",
+            f"确定要删除文件夹 '{folder_name}' 吗？\n\n请选择操作：",
+            QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
+            QMessageBox.Cancel
+        )
+
+        if reply == QMessageBox.Cancel:
+            return
+
+        # 简化：始终移动视频到"未分类"（不提供删除视频选项，更安全）
+        delete_videos = False
+
+        try:
+            from videotrans.hearsight.vector_store import get_vector_store
+            vector_store = get_vector_store()
+            success = vector_store.delete_folder(folder_id, delete_videos)
+
+            if success:
+                QMessageBox.information(self, "成功", f"文件夹已删除，视频已移动到'未分类'")
+                self.load_folders()
+                self.load_videos()
+            else:
+                QMessageBox.warning(self, "失败", "删除文件夹失败")
+        except Exception as e:
+            QMessageBox.critical(self, "错误", f"删除文件夹失败：\n{str(e)}")
+
     def load_videos(self):
-        """加载视频列表"""
+        """加载视频列表（根据当前选中的文件夹过滤）"""
         import traceback
-        print(f"\n[load_videos] 被调用")
+        print(f"\n[load_videos] 被调用，当前文件夹ID: {self.current_folder_id}")
         print(f"   调用堆栈:")
         for line in traceback.format_stack()[:-1]:
             print(f"   {line.strip()}")
@@ -509,7 +784,9 @@ class SummaryManagerDialog(QDialog):
         try:
             from videotrans.hearsight.vector_store import get_vector_store
             vector_store = get_vector_store()
-            self.videos = vector_store.list_all_videos()
+
+            # 根据当前文件夹过滤
+            self.videos = vector_store.list_all_videos(folder_id=self.current_folder_id)
 
             self.video_list.clear()
             for video in self.videos:
@@ -517,18 +794,20 @@ class SummaryManagerDialog(QDialog):
                 para_count = video.get('paragraph_count', 0)
                 duration = video.get('total_duration', 0)
                 video_path = video.get('video_path', '')
+                folder_name = video.get('folder', '未分类')
 
                 # 格式化时长
                 duration_str = f"{int(duration//60)}:{int(duration%60):02d}"
 
-                # 创建列表项
-                item_text = f"[视频] {topic}\n   [段落] {para_count}段 | [时长] {duration_str}"
+                # 创建列表项（显示文件夹标签）
+                item_text = f"[视频] {topic}\n   📁 {folder_name} | [段落] {para_count}段 | [时长] {duration_str}"
                 item = QListWidgetItem(item_text)
                 item.setData(Qt.UserRole, video)
                 self.video_list.addItem(item)
 
             # 更新统计
-            self.stats_label.setText(f"总计: {len(self.videos)} 个视频")
+            folder_info = f" (文件夹过滤)" if self.current_folder_id else ""
+            self.stats_label.setText(f"总计: {len(self.videos)} 个视频{folder_info}")
 
             # 清空详情
             print(f"[load_videos] 清空段落详情（load_videos）")
@@ -689,7 +968,7 @@ class SummaryManagerDialog(QDialog):
             QMessageBox.critical(self, "错误", f"加载视频详情失败：\n{str(e)}")
 
     def perform_search(self):
-        """执行搜索"""
+        """执行搜索（支持文件夹过滤）"""
         query = self.search_input.text().strip()
         if not query:
             QMessageBox.warning(self, "提示", "请输入搜索关键词")
@@ -697,7 +976,18 @@ class SummaryManagerDialog(QDialog):
 
         # 切换到搜索结果 Tab
         self.tab_widget.setCurrentIndex(2)
-        self.search_results_tab.setHtml("<p>搜索中...</p>")
+
+        # 显示搜索范围提示
+        if self.current_folder_id:
+            # 获取当前文件夹名称
+            folder_name = "未知文件夹"
+            for folder in self.folders:
+                if folder.get('folder_id') == self.current_folder_id:
+                    folder_name = folder.get('name')
+                    break
+            self.search_results_tab.setHtml(f"<p>在文件夹 '{folder_name}' 中搜索...</p>")
+        else:
+            self.search_results_tab.setHtml("<p>在所有视频中搜索...</p>")
 
         # 启动搜索线程
         if self.search_thread and self.search_thread.isRunning():
@@ -705,7 +995,7 @@ class SummaryManagerDialog(QDialog):
             self.search_thread.wait()
 
         n_results = self.results_count.value()
-        self.search_thread = SearchThread(query, n_results, self)
+        self.search_thread = SearchThread(query, n_results, self.current_folder_id, self)
         self.search_thread.finished.connect(self.on_search_finished)
         self.search_thread.error.connect(self.on_search_error)
         self.search_thread.start()
@@ -902,18 +1192,109 @@ class SummaryManagerDialog(QDialog):
 
         if reply == QMessageBox.Yes:
             try:
+                # 获取当前使用的向量存储后端
                 from videotrans.hearsight.vector_store import get_vector_store
+                from videotrans.configure import config
+
                 vector_store = get_vector_store()
+
+                # 检测当前使用的后端类型
+                backend_name = type(vector_store).__name__
+                print(f"[删除] 当前向量存储后端: {backend_name}")
+                print(f"[删除] 视频路径: {video_path}")
+
+                # 尝试删除
                 success = vector_store.delete_video(video_path)
 
                 if success:
-                    QMessageBox.information(self, "成功", "摘要已删除")
+                    QMessageBox.information(
+                        self,
+                        "成功",
+                        f"摘要已删除\n\n后端: {backend_name}"
+                    )
+                    # 重新加载视频列表
                     self.load_videos()
                 else:
-                    QMessageBox.warning(self, "提示", "未找到该视频的摘要数据")
+                    QMessageBox.warning(
+                        self,
+                        "提示",
+                        f"未找到该视频的摘要数据\n\n视频路径: {os.path.basename(video_path)}\n后端: {backend_name}"
+                    )
 
             except Exception as e:
+                import traceback
+                error_detail = traceback.format_exc()
+                print(f"[删除] 删除失败: {e}")
+                print(error_detail)
                 QMessageBox.critical(self, "错误", f"删除失败：\n{str(e)}")
+
+    def show_video_context_menu(self, pos):
+        """显示视频右键菜单"""
+        from PySide6.QtWidgets import QMenu
+
+        item = self.video_list.itemAt(pos)
+        if not item:
+            return
+
+        video = item.data(Qt.UserRole)
+        video_path = video.get('video_path')
+        topic = video.get('topic', '该视频')
+
+        # 创建菜单
+        menu = QMenu(self)
+
+        # 移动到文件夹
+        move_action = menu.addAction("📁 移动到文件夹...")
+        move_action.triggered.connect(lambda: self.move_video_to_folder(video_path, topic))
+
+        menu.exec(self.video_list.mapToGlobal(pos))
+
+    def move_video_to_folder(self, video_path: str, topic: str):
+        """移动视频到文件夹"""
+        from PySide6.QtWidgets import QInputDialog
+
+        # 获取所有文件夹
+        folder_names = [f.get('name') for f in self.folders]
+        if not folder_names:
+            QMessageBox.warning(self, "提示", "暂无文件夹，请先创建文件夹")
+            return
+
+        # 让用户选择目标文件夹
+        folder_name, ok = QInputDialog.getItem(
+            self,
+            "移动视频",
+            f"将视频 '{topic}' 移动到：",
+            folder_names,
+            0,
+            False
+        )
+
+        if ok and folder_name:
+            try:
+                # 查找文件夹ID
+                folder_id = None
+                for folder in self.folders:
+                    if folder.get('name') == folder_name:
+                        folder_id = folder.get('folder_id')
+                        break
+
+                if not folder_id:
+                    QMessageBox.warning(self, "错误", "未找到目标文件夹")
+                    return
+
+                # 移动视频
+                from videotrans.hearsight.vector_store import get_vector_store
+                vector_store = get_vector_store()
+                success = vector_store.assign_video_to_folder(video_path, folder_id)
+
+                if success:
+                    QMessageBox.information(self, "成功", f"视频已移动到文件夹 '{folder_name}'")
+                    self.load_folders()
+                    self.load_videos()
+                else:
+                    QMessageBox.warning(self, "失败", "移动视频失败")
+            except Exception as e:
+                QMessageBox.critical(self, "错误", f"移动视频失败：\n{str(e)}")
 
     def eventFilter(self, obj, event):
         """事件过滤器，处理段落详情中的链接点击"""
@@ -964,8 +1345,20 @@ class SummaryManagerDialog(QDialog):
                     )
                     return
 
-                # 检查视频文件是否存在
-                if not self.current_video_path or not os.path.exists(self.current_video_path):
+                # 检查视频文件/链接是否有效
+                if not self.current_video_path:
+                    QMessageBox.warning(
+                        self,
+                        "视频不存在",
+                        "未找到视频路径"
+                    )
+                    return
+
+                # 检查是否是URL链接（http/https）
+                is_url = self.current_video_path.startswith(('http://', 'https://'))
+
+                # 如果是本地文件，检查文件是否存在
+                if not is_url and not os.path.exists(self.current_video_path):
                     QMessageBox.warning(
                         self,
                         "视频不存在",
@@ -993,13 +1386,18 @@ class SummaryManagerDialog(QDialog):
         查找翻译后的目标视频
 
         Args:
-            source_video_path: 原始视频路径
+            source_video_path: 原始视频路径（可以是本地路径或URL）
 
         Returns:
             目标视频路径，如果找不到则返回原始路径
         """
         print(f"\n[查找目标视频] 开始查找目标视频...")
         print(f"   原始路径: {source_video_path}")
+
+        # 如果是URL，直接返回（在线视频不需要查找本地翻译版本）
+        if source_video_path.startswith(('http://', 'https://')):
+            print(f"   [URL] 检测到在线视频链接，直接使用")
+            return source_video_path
 
         # 检查原始视频是否存在
         if not os.path.exists(source_video_path):

@@ -88,11 +88,74 @@ class TranslateSrt(BaseTask):
         if Path(self.cfg['target_sub']).is_file():
             self._signal(text=f"{self.cfg['name']}", type='succeed')
             tools.send_notification(config.transobj['Succeed'], f"{self.cfg['basename']}")
+
+            # Qdrant export integration (non-blocking)
+            if config.params.get('qdrant_enabled', False):
+                self._export_to_qdrant()
         try:
             if 'shound_del_name' in self.cfg:
                 Path(self.cfg['shound_del_name']).unlink(missing_ok=True)
         except:
             pass
+
+    def _export_to_qdrant(self):
+        """Export translated SRT to Qdrant (non-blocking, non-fatal)"""
+        try:
+            from videotrans.qdrant_export import export_to_qdrant, ExportConfig, validate_export_config
+            import logging
+
+            logger = logging.getLogger(__name__)
+
+            # Build export config from global config
+            export_config = ExportConfig(
+                qdrant_url=config.params.get('qdrant_url', 'http://localhost:6333'),
+                qdrant_api_key=config.params.get('qdrant_api_key', None) or None,
+                enable_summaries=config.params.get('qdrant_export_summaries', True),
+                llm_api_url=config.params.get('qdrant_llm_api_url', ''),
+                llm_api_key=config.params.get('qdrant_llm_api_key', ''),
+                llm_model=config.params.get('qdrant_llm_model', 'deepseek-ai/DeepSeek-V3'),
+                embedding_api_url=config.params.get('qdrant_embedding_api_url', ''),
+                embedding_api_key=config.params.get('qdrant_embedding_api_key', ''),
+                embedding_model=config.params.get('qdrant_embedding_model', 'BAAI/bge-large-zh-v1.5')
+            )
+
+            # Validate config
+            is_valid, error_msg = validate_export_config(export_config)
+            if not is_valid:
+                logger.warning(f"Qdrant export skipped: {error_msg}")
+                return
+
+            # Get video information
+            video_path = self.cfg.get('name', '')  # Source SRT path as proxy for video
+            video_title = self.cfg.get('basename', '')
+            target_language = self.cfg.get('target_code', 'zh-cn')
+            srt_path = self.cfg['target_sub']
+
+            logger.info(f"Starting Qdrant export for: {video_title}")
+
+            # Export (this may take time, but we don't block the UI)
+            result = export_to_qdrant(
+                srt_path=srt_path,
+                video_path=video_path,
+                video_title=video_title,
+                language=target_language,
+                config=export_config
+            )
+
+            if result.success:
+                logger.info(f"✓ Qdrant export succeeded: video_id={result.video_id}, chunks={result.chunks_count}")
+                tools.send_notification(
+                    "已导出到 Qdrant 向量库" if config.defaulelang == 'zh' else "Exported to Qdrant",
+                    f"{video_title} ({result.chunks_count} chunks)"
+                )
+            else:
+                logger.error(f"✗ Qdrant export failed: {result.error_message}")
+
+        except Exception as e:
+            # Log error but don't fail the translation task
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Qdrant export error (non-fatal): {e}", exc_info=True)
     def _exit(self):
         if config.exit_soft or config.box_trans != 'ing':
             return True

@@ -136,6 +136,19 @@ class Ui_MainWindow(object):
         self.enable_hearsight.setToolTip("完成翻译后自动生成智能摘要并存储到向量库")
         self.enable_hearsight.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
 
+        # HearSight文件夹选择器
+        self.hearsight_folder_label = QtWidgets.QLabel(self.layoutWidget)
+        self.hearsight_folder_label.setText("分类文件夹:" if config.defaulelang == 'zh' else "Category Folder:")
+        self.hearsight_folder_label.setMinimumSize(QtCore.QSize(80, 20))
+        self.hearsight_folder_label.setToolTip("选择用于智能摘要的视频分类文件夹" if config.defaulelang == 'zh' else "Select category folder for smart summary")
+        self.hearsight_folder_label.show()  # 显式显示
+
+        self.hearsight_folder_combo = QtWidgets.QComboBox(self.layoutWidget)
+        self.hearsight_folder_combo.setObjectName("hearsight_folder_combo")
+        self.hearsight_folder_combo.setMinimumWidth(150)
+        self.hearsight_folder_combo.setToolTip("选择分类文件夹可限制智能摘要的处理范围" if config.defaulelang == 'zh' else "Select category folder to limit smart summary scope")
+        self.hearsight_folder_combo.show()  # 显式显示
+
         self.horizontalLayout_6.addWidget(self.copysrt_rawvideo)
         self.horizontalLayout_6.addWidget(self.only_video)
         self.horizontalLayout_6.addWidget(self.shutdown)
@@ -145,6 +158,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_6a = QtWidgets.QHBoxLayout()
         self.horizontalLayout_6a.setObjectName("horizontalLayout_6a")
         self.horizontalLayout_6a.addWidget(self.enable_hearsight)
+        self.horizontalLayout_6a.addWidget(self.hearsight_folder_label)
+        self.horizontalLayout_6a.addWidget(self.hearsight_folder_combo)
         self.horizontalLayout_6a.addStretch()
         self.verticalLayout_3.addLayout(self.horizontalLayout_6a)
 
@@ -750,6 +765,15 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_3.addWidget(self.enable_cuda)
         self.horizontalLayout_3.addWidget(self.startbtn)
+
+        # 清空任务列表按钮
+        self.clear_task_btn = QtWidgets.QPushButton(self.layoutWidget)
+        self.clear_task_btn.setMinimumSize(QtCore.QSize(100, 40))
+        self.clear_task_btn.setObjectName("clear_task_btn")
+        self.clear_task_btn.setText('清空列表' if config.defaulelang == 'zh' else 'Clear List')
+        self.clear_task_btn.setToolTip(
+            '清空所有任务进度条' if config.defaulelang == 'zh' else 'Clear all task progress bars')
+        self.horizontalLayout_3.addWidget(self.clear_task_btn)
 
         self.continue_compos = QtWidgets.QPushButton(self.layoutWidget)
         self.continue_compos.setEnabled(True)

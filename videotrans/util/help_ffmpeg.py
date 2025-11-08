@@ -843,17 +843,51 @@ def format_video(name, target_dir=None):
         # 最终存放目标位置，直接存到这里
     }
     rule = r'[\[\]\*\?\"\|\'\:]'
-    if re.search(rule, raw_noextname) or re.search(r'[\s\.]$', raw_noextname):
-        # 规范化名字
-        raw_noextname = re.sub(rule, f'', raw_noextname)
-        raw_noextname = re.sub(r'[\.\s]$', f'', raw_noextname)
+    # 添加全角字符检测：全角竖线｜、顿号、、感叹号！等
+    fullwidth_chars = r'[｜、！？：；""''（）【】《》]'
+
+    # 检查是否需要规范化文件名
+    needs_normalization = (
+        re.search(rule, raw_noextname) or
+        re.search(fullwidth_chars, raw_noextname) or
+        re.search(r'[\s\.]$', raw_noextname) or
+        len(raw_noextname) > 200  # 文件名过长也需要处理
+    )
+
+    if needs_normalization:
+        # 规范化名字：移除特殊字符
+        raw_noextname = re.sub(rule, '', raw_noextname)
+        raw_noextname = re.sub(fullwidth_chars, '', raw_noextname)
+        raw_noextname = re.sub(r'[\.\s]$', '', raw_noextname)
+        # 清理多个连续空格，替换为单个空格
+        raw_noextname = re.sub(r'\s+', ' ', raw_noextname)
         raw_noextname = raw_noextname.strip()
+
+        # 如果处理后文件名过长（Windows 路径限制），截断保留前200个字符
+        if len(raw_noextname) > 200:
+            raw_noextname = raw_noextname[:200].strip()
+
+        # 确保文件名不为空
+        if not raw_noextname:
+            raw_noextname = f'video_{int(time.time())}'
 
         if Path(f'{config.TEMP_DIR}/{raw_noextname}{ext}').exists():
             raw_noextname += f'{chr(random.randint(97, 122))}'
 
         new_name = f'{config.TEMP_DIR}/{raw_noextname}{ext}'
-        shutil.copy2(name, new_name)
+        try:
+            shutil.copy2(name, new_name)
+        except Exception as e:
+            # 如果复制失败，记录错误并尝试使用更短的名字
+            config.logger.error(f'复制文件失败: {name} -> {new_name}, 错误: {str(e)}')
+            # 使用时间戳作为备用文件名
+            raw_noextname = f'video_{int(time.time())}_{random.randint(1000, 9999)}'
+            new_name = f'{config.TEMP_DIR}/{raw_noextname}{ext}'
+            try:
+                shutil.copy2(name, new_name)
+            except Exception as e2:
+                # 如果还是失败，抛出更详细的错误信息
+                raise Exception(f'无法复制文件 {name}，错误: {str(e2)}')
         obj['name'] = new_name
         obj['noextname'] = raw_noextname
         obj['basename'] = f'{raw_noextname}{ext}'

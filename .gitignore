@@ -44,6 +44,8 @@ videotrans/translator/freechatgpt.py
 videotrans/cfg.json
 videotrans/params.json
 videotrans/glossary.txt
+oss_config.json
+hearsight_config.json
 tmp/
 runtime
 f5-tts

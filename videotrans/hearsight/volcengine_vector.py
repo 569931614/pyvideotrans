@@ -20,7 +20,8 @@ class VolcengineVectorClient:
         api_key: str,
         base_url: str = "https://ark.cn-beijing.volces.com/api/v3",
         collection_name: str = "video_summaries",
-        embedding_model: str = "ep-20241217191853-w54rf"
+        embedding_model: str = "ep-20241217191853-w54rf",
+        db_config: Optional[Dict[str, Any]] = None
     ):
         """
         初始化火山引擎向量化客户端
@@ -30,11 +31,13 @@ class VolcengineVectorClient:
             base_url: API基础URL
             collection_name: 集合名称
             embedding_model: Embedding模型endpoint ID
+            db_config: PostgreSQL数据库配置（可选）
         """
         self.api_key = api_key
         self.base_url = base_url.rstrip('/')
         self.collection_name = collection_name
         self.embedding_model = embedding_model
+        self.db_config = db_config
 
         # API endpoints
         self.embedding_url = f"{self.base_url}/embeddings"
@@ -44,6 +47,9 @@ class VolcengineVectorClient:
             'Authorization': f'Bearer {self.api_key}',
             'Content-Type': 'application/json'
         })
+
+        # PostgreSQL连接（懒加载）
+        self._pg_conn = None
 
     def _generate_video_id(self, video_path: str) -> str:
         """生成视频唯一ID"""
@@ -233,8 +239,10 @@ class VolcengineVectorClient:
 
             # 存储到本地文件
             if local_storage_path is None:
+                # 使用 HearSight 的向量数据库路径（统一存储）
                 from videotrans.configure import config
-                local_storage_path = os.path.join(config.ROOT_DIR, 'vector_db', 'volcengine')
+                hearsight_path = os.path.join(os.path.dirname(config.ROOT_DIR), 'HearSight', 'app_datas', 'vector_db', 'volcengine')
+                local_storage_path = hearsight_path
 
             os.makedirs(local_storage_path, exist_ok=True)
 
@@ -265,6 +273,12 @@ class VolcengineVectorClient:
             print(f"   - 整体摘要: 1 条")
             print(f"   - 段落摘要: {len(paragraphs)} 条")
             print(f"   - 存储路径: {storage_file}")
+
+            # 同时存储到PostgreSQL（用于跨服务器访问）
+            try:
+                self._store_to_postgresql(video_path, summary, paragraphs, metadata)
+            except Exception as pg_error:
+                print(f"[volcengine] PostgreSQL存储失败（非致命）: {pg_error}")
 
             return True
 
@@ -380,15 +394,24 @@ class VolcengineVectorClient:
         try:
             video_id = self._generate_video_id(video_path)
 
+            # 1. 删除本地JSON文件
             if local_storage_path is None:
                 from videotrans.configure import config
                 local_storage_path = os.path.join(config.ROOT_DIR, 'vector_db', 'volcengine')
 
             storage_file = os.path.join(local_storage_path, f"{video_id}.json")
 
+            json_deleted = False
             if os.path.exists(storage_file):
                 os.remove(storage_file)
-                print(f"[volcengine] 已删除视频摘要: {os.path.basename(video_path)}")
+                print(f"[volcengine] 已删除本地JSON: {os.path.basename(video_path)}")
+                json_deleted = True
+
+            # 2. 删除PostgreSQL数据
+            pg_deleted = self._delete_from_postgresql(video_path)
+
+            if json_deleted or pg_deleted:
+                print(f"[volcengine] 删除完成 (JSON: {json_deleted}, PostgreSQL: {pg_deleted})")
                 return True
             else:
                 print(f"[volcengine] 未找到视频摘要: {os.path.basename(video_path)}")
@@ -396,6 +419,8 @@ class VolcengineVectorClient:
 
         except Exception as e:
             print(f"[volcengine] 删除失败: {e}")
+            import traceback
+            traceback.print_exc()
             return False
 
     def get_video_summary(
@@ -417,8 +442,10 @@ class VolcengineVectorClient:
             video_id = self._generate_video_id(video_path)
 
             if local_storage_path is None:
+                # 使用 HearSight 的向量数据库路径（统一存储）
                 from videotrans.configure import config
-                local_storage_path = os.path.join(config.ROOT_DIR, 'vector_db', 'volcengine')
+                hearsight_path = os.path.join(os.path.dirname(config.ROOT_DIR), 'HearSight', 'app_datas', 'vector_db', 'volcengine')
+                local_storage_path = hearsight_path
 
             storage_file = os.path.join(local_storage_path, f"{video_id}.json")
 
@@ -507,8 +534,10 @@ class VolcengineVectorClient:
         """
         try:
             if local_storage_path is None:
+                # 使用 HearSight 的向量数据库路径（统一存储）
                 from videotrans.configure import config
-                local_storage_path = os.path.join(config.ROOT_DIR, 'vector_db', 'volcengine')
+                hearsight_path = os.path.join(os.path.dirname(config.ROOT_DIR), 'HearSight', 'app_datas', 'vector_db', 'volcengine')
+                local_storage_path = hearsight_path
 
             if not os.path.exists(local_storage_path):
                 return []
@@ -565,3 +594,159 @@ class VolcengineVectorClient:
         except Exception as e:
             print(f"[volcengine] 连接测试失败: {e}")
             return False
+
+    def _get_pg_connection(self):
+        """获取PostgreSQL连接（懒加载）"""
+        if self._pg_conn is None and self.db_config:
+            try:
+                import psycopg2
+                from psycopg2.extras import RealDictCursor
+
+                self._pg_conn = psycopg2.connect(
+                    host=self.db_config.get('host', 'localhost'),
+                    port=self.db_config.get('port', 5432),
+                    user=self.db_config.get('user', 'postgres'),
+                    password=self.db_config.get('password', ''),
+                    database=self.db_config.get('database', 'hearsight'),
+                    cursor_factory=RealDictCursor
+                )
+                print("[volcengine] PostgreSQL连接成功")
+            except Exception as e:
+                print(f"[volcengine] PostgreSQL连接失败: {e}")
+                self._pg_conn = None
+
+        return self._pg_conn
+
+    def _store_to_postgresql(
+        self,
+        video_path: str,
+        summary: Dict[str, Any],
+        paragraphs: List[Dict[str, Any]],
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> bool:
+        """
+        将摘要数据存储到PostgreSQL
+
+        Args:
+            video_path: 视频路径
+            summary: 整体摘要
+            paragraphs: 段落列表
+            metadata: 元数据
+
+        Returns:
+            bool: 是否存储成功
+        """
+        conn = self._get_pg_connection()
+        if not conn:
+            return False
+
+        try:
+            cursor = conn.cursor()
+
+            # 生成transcript_id
+            import hashlib
+            transcript_id = hashlib.md5(video_path.encode('utf-8')).hexdigest()[:16]
+
+            # 1. 插入或更新video_summaries表
+            cursor.execute("""
+                INSERT INTO video_summaries (
+                    transcript_id, video_path, title, topic, summary, metadata, created_at
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, NOW())
+                ON CONFLICT (transcript_id)
+                DO UPDATE SET
+                    video_path = EXCLUDED.video_path,
+                    title = EXCLUDED.title,
+                    topic = EXCLUDED.topic,
+                    summary = EXCLUDED.summary,
+                    metadata = EXCLUDED.metadata,
+                    created_at = NOW()
+            """, (
+                transcript_id,
+                video_path,
+                metadata.get('title', metadata.get('basename', '')) if metadata else '',
+                summary.get('topic', ''),
+                summary.get('summary', ''),
+                json.dumps(metadata) if metadata else '{}'
+            ))
+
+            # 2. 删除旧的段落数据
+            cursor.execute("DELETE FROM video_paragraphs WHERE transcript_id = %s", (transcript_id,))
+
+            # 3. 插入段落数据
+            for i, para in enumerate(paragraphs):
+                cursor.execute("""
+                    INSERT INTO video_paragraphs (
+                        transcript_id, paragraph_index, start_time, end_time, text, summary, created_at
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, NOW())
+                """, (
+                    transcript_id,
+                    i,
+                    float(para.get('start_time', 0.0)),
+                    float(para.get('end_time', 0.0)),
+                    para.get('text', ''),
+                    para.get('summary', '')
+                ))
+
+            conn.commit()
+            print(f"[volcengine] PostgreSQL存储成功: transcript_id={transcript_id}")
+            return True
+
+        except Exception as e:
+            conn.rollback()
+            print(f"[volcengine] PostgreSQL存储失败: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+        finally:
+            if cursor:
+                cursor.close()
+
+    def _delete_from_postgresql(self, video_path: str) -> bool:
+        """
+        从PostgreSQL删除视频摘要数据
+
+        Args:
+            video_path: 视频路径
+
+        Returns:
+            bool: 是否删除成功
+        """
+        conn = self._get_pg_connection()
+        if not conn:
+            print("[volcengine] 无PostgreSQL连接，跳过删除")
+            return False
+
+        try:
+            cursor = conn.cursor()
+
+            # 生成transcript_id
+            transcript_id = hashlib.md5(video_path.encode('utf-8')).hexdigest()[:16]
+
+            # 删除段落数据（外键关联会自动处理）
+            cursor.execute("DELETE FROM video_paragraphs WHERE transcript_id = %s", (transcript_id,))
+            para_count = cursor.rowcount
+
+            # 删除摘要数据
+            cursor.execute("DELETE FROM video_summaries WHERE transcript_id = %s", (transcript_id,))
+            summary_count = cursor.rowcount
+
+            conn.commit()
+
+            if summary_count > 0 or para_count > 0:
+                print(f"[volcengine] PostgreSQL删除成功: transcript_id={transcript_id} (摘要: {summary_count}, 段落: {para_count})")
+                return True
+            else:
+                print(f"[volcengine] PostgreSQL中未找到该视频: transcript_id={transcript_id}")
+                return False
+
+        except Exception as e:
+            conn.rollback()
+            print(f"[volcengine] PostgreSQL删除失败: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+        finally:
+            if cursor:
+                cursor.close()

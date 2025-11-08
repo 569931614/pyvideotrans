@@ -821,3 +821,53 @@ class WebBridge(QObject):
                 "message": f"{'打开文件夹失败' if config.defaulelang == 'zh' else 'Failed to open folder'}: {e}"
             }
 
+    @Slot(result=list)
+    def getHearSightFolders(self) -> List[Dict[str, Any]]:
+        """获取HearSight分类文件夹列表"""
+        try:
+            from videotrans.hearsight.vector_store import get_vector_store
+
+            # 获取向量存储实例
+            vector_store = get_vector_store()
+            folders = vector_store.list_folders()
+
+            # 转换为前端需要的格式
+            result = [
+                {
+                    "value": None,
+                    "label": "全部视频" if config.defaulelang == 'zh' else "All Videos",
+                    "count": 0
+                }
+            ]
+
+            for folder in folders:
+                result.append({
+                    "value": folder.get('folder_id', ''),
+                    "label": folder.get('name', ''),
+                    "count": folder.get('video_count', 0)
+                })
+
+            return result
+        except Exception as e:
+            print(f"Error getting HearSight folders: {e}")
+            import traceback
+            traceback.print_exc()
+            # 出错时至少返回"全部视频"选项
+            return [
+                {
+                    "value": None,
+                    "label": "全部视频" if config.defaulelang == 'zh' else "All Videos",
+                    "count": 0
+                }
+            ]
+
+    @Slot(str)
+    def setHearSightFolder(self, folder_id: str) -> None:
+        """设置选中的HearSight分类文件夹"""
+        try:
+            # None 或空字符串表示"全部视频"
+            config.params['hearsight_folder_id'] = folder_id if folder_id else None
+            print(f"[HearSight] 选中分类文件夹: {folder_id or '全部视频'}")
+        except Exception as e:
+            print(f"Error setting HearSight folder: {e}")
+

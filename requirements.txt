@@ -54,3 +54,11 @@ hdbscan
 tenacity
 google-genai
 hf_xet
+psycopg2-binary
+oss2>=2.17.0
+boto3>=1.26.0
+minio>=7.1.0
+cryptography>=41.0.0
+chromadb
+qdrant-client
+chardet
