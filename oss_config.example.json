@@ -1,0 +1,16 @@
+{
+  "enabled": false,
+  "provider": "aliyun",
+  "endpoint": "oss-cn-beijing.aliyuncs.com",
+  "access_key_id": "",
+  "access_key_secret": "",
+  "bucket_name": "",
+  "region": "",
+  "custom_domain": "",
+  "path_prefix": "videos/",
+  "public_access": true,
+  "upload_on_complete": true,
+  "upload_timeout": 300,
+  "retry_count": 3,
+  "multipart_threshold": 104857600
+}
