@@ -63,3 +63,33 @@ Thumbs.db
 videotrans/core/
 videotrans/planner/
 videotrans/util/segments.py
+
+# Test files
+test_*.py
+check_*.py
+
+# Logs and output
+logs/
+output/
+
+# Debug and temporary files
+*_debug.txt
+preprocess_debug.txt
+
+# Backup files
+*.backup_*
+*.backup_before_*
+
+# Vector DB temporary data
+vector_db/volcengine/
+
+# Media files
+*.mp3
+*.mp4
+*.wav
+*.avi
+
+# Batch scripts (Windows)
+修复DLL问题.bat
+修复DLL问题.ps1
+测试打包程序.bat
