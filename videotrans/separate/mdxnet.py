@@ -7,7 +7,6 @@ import torch
 
 from videotrans.util.tools import runffmpeg
 
-# from tqdm import tqdm
 cpu = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 

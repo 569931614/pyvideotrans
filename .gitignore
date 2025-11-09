@@ -35,6 +35,11 @@ __pycache__
 5.wav
 15.wav
 *副本.py
+
+# Python cache files
+*.pyc
+*.pyo
+__pycache__/
 pretrained_models
 pack.bat
 pack-api.bat

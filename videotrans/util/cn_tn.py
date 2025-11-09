@@ -517,19 +517,6 @@ class MathSymbol(object):
             yield v
 
 
-# class OtherSymbol(object):
-#     """
-#     其他符号
-#     """
-#
-#     def __init__(self, sil):
-#         self.sil = sil
-#
-#     def __iter__(self):
-#         for v in self.__dict__.values():
-#             yield v
-
-
 # ================================================================================ #
 #                                    basic utils
 # ================================================================================ #
